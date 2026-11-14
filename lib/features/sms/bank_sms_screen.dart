@@ -269,7 +269,7 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(22, 8, 22, 12),
-                child: _Tabs(
+                child: SmsTabs(
                   debits: debits,
                   credits: 'Credits${newCredits > 0 ? ' · $newCredits' : ''}',
                   debitsLabel: 'Debits${newDebits > 0 ? ' · $newDebits' : ''}',
@@ -285,8 +285,8 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
 }
 
 /// Credits / Debits switch at the bottom of the page, in thumb reach.
-class _Tabs extends StatelessWidget {
-  const _Tabs({required this.debits, required this.credits, required this.debitsLabel, required this.onChanged});
+class SmsTabs extends StatelessWidget {
+  const SmsTabs({required this.debits, required this.credits, required this.debitsLabel, required this.onChanged});
   final bool debits;
   final String credits, debitsLabel;
   final ValueChanged<bool> onChanged;
@@ -304,8 +304,11 @@ class _Tabs extends StatelessWidget {
             borderRadius: BorderRadius.circular(99),
             boxShadow: on ? const [BoxShadow(color: Color(0x22000000), blurRadius: 4, offset: Offset(0, 1))] : null,
           ),
-          child: Center(
-            child: Text(label, style: T.bodyBold.copyWith(fontSize: 15, color: on ? p.ink : p.muted)),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: T.bodyBold.copyWith(fontSize: 15, color: on ? p.ink : p.muted),
           ),
         ),
       ),
