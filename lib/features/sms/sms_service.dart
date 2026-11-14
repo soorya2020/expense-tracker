@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -10,14 +11,15 @@ import 'sms_parser.dart';
 const _channel = MethodChannel('tally/sms');
 
 /// Asks for SMS access. Returns true when granted.
-Future<bool> askSmsPermission() async => (await Permission.sms.request()).isGranted;
+// The web preview has no SMS inbox; it shows sample messages instead.
+Future<bool> askSmsPermission() async => kIsWeb || (await Permission.sms.request()).isGranted;
 
-Future<bool> hasSmsPermission() async => (await Permission.sms.status).isGranted;
+Future<bool> hasSmsPermission() async => kIsWeb || (await Permission.sms.status).isGranted;
 
 /// Reads new bank SMS from the inbox into the BankSms table.
 /// Looks back at most 45 days. Safe to call often.
 Future<int> scanSms(Repo repo, Settings settings) async {
-  if (!settings.smsEnabled) return 0;
+  if (kIsWeb || !settings.smsEnabled) return 0;
   if (!await hasSmsPermission()) return 0;
   final floor = DateTime.now().subtract(const Duration(days: 45));
   final last = settings.smsLastScan;
