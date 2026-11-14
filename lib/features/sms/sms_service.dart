@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/cycle_math.dart';
 import '../../data/db.dart';
 import '../../data/repo.dart';
 import '../../data/settings.dart';
@@ -14,14 +15,24 @@ Future<bool> askSmsPermission() async => (await Permission.sms.request()).isGran
 
 Future<bool> hasSmsPermission() async => (await Permission.sms.status).isGranted;
 
-/// Reads new bank SMS from the inbox into the BankSms table.
-/// Looks back at most 45 days. Safe to call often.
-Future<int> scanSms(Repo repo, Settings settings) async {
+/// The first day of the pay cycle that contains today.
+Future<DateTime> currentCycleStart(Repo repo, Settings settings) async {
+  final today = dateOnly(DateTime.now());
+  for (final c in await repo.allCycles()) {
+    if (!today.isBefore(dateOnly(c.startDate)) && !today.isAfter(dateOnly(c.endDate))) return dateOnly(c.startDate);
+  }
+  return cycleStartOnOrBefore(today, settings.cycleDay);
+}
+
+/// Reads bank SMS from the current pay cycle into the BankSms table.
+/// Normally only messages since the last check; [full] re-reads the whole
+/// cycle. Messages already added or skipped keep their status.
+Future<int> scanSms(Repo repo, Settings settings, {bool full = false}) async {
   if (!settings.smsEnabled) return 0;
   if (!await hasSmsPermission()) return 0;
-  final floor = DateTime.now().subtract(const Duration(days: 45));
-  final last = settings.smsLastScan;
-  final since = last.isAfter(floor) ? last.subtract(const Duration(minutes: 5)) : floor;
+  final from = await currentCycleStart(repo, settings);
+  final last = settings.smsLastScan.subtract(const Duration(minutes: 5));
+  final since = !full && last.isAfter(from) ? last : from;
   final List<dynamic> raw;
   try {
     raw = await _channel.invokeMethod<List<dynamic>>('inbox', {'since': since.millisecondsSinceEpoch}) ?? const [];

@@ -12,6 +12,10 @@ import '../../shared/widgets.dart';
 import '../entry/add_entry_screen.dart';
 import 'sms_service.dart';
 
+/// Only messages from the current pay cycle (from [start] on).
+List<BankMessage> cycleSms(List<BankMessage> all, DateTime? start) =>
+    start == null ? all : all.where((m) => !m.receivedAt.isBefore(start)).toList();
+
 /// Opens Add with this SMS filled in. Marks the SMS added once saved.
 void addFromSms(BuildContext context, WidgetRef ref, BankMessage m) {
   final repo = ref.read(repoProvider);
@@ -42,6 +46,7 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
   late bool debits = widget.debits;
   final picked = <int>{};
   bool? allowed;
+  bool fetching = false;
 
   @override
   void initState() {
@@ -49,10 +54,20 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
     _refresh();
   }
 
-  Future<void> _refresh() async {
+  Future<void> _refresh({bool full = false}) async {
     final ok = await hasSmsPermission();
     if (mounted) setState(() => allowed = ok);
-    if (ok) await scanSms(ref.read(repoProvider), ref.read(settingsProvider));
+    if (!ok) return;
+    if (mounted) setState(() => fetching = true);
+    try {
+      final n = await scanSms(ref.read(repoProvider), ref.read(settingsProvider), full: full);
+      if (full && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(n == 0 ? 'No bank messages found in this cycle.' : 'Checked $n bank messages from this cycle.')));
+      }
+    } finally {
+      if (mounted) setState(() => fetching = false);
+    }
   }
 
   Future<void> _allow() async {
@@ -135,7 +150,8 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.p;
-    final all = ref.watch(bankSmsProvider).value ?? const <BankMessage>[];
+    final from = ref.watch(currentCycleProvider)?.start;
+    final all = cycleSms(ref.watch(bankSmsProvider).value ?? const <BankMessage>[], from);
     final list = all.where((m) => m.direction == (debits ? 'debit' : 'credit')).toList();
     final newOnes = list.where((m) => m.status == 'new').toList();
     final newCredits = all.where((m) => m.direction == 'credit' && m.status == 'new').length;
@@ -178,15 +194,25 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
       appBar: AppBar(
         leading: selecting ? IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(picked.clear)) : const BackButton(),
         title: selecting ? Text('${picked.length} picked', style: T.bodyBold.copyWith(color: p.ink, fontSize: 17)) : null,
+        actions: [
+          if (!selecting && allowed == true)
+            fetching
+                ? const Padding(padding: EdgeInsets.all(16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+                : IconButton(tooltip: 'Fetch SMS again', icon: const Icon(Icons.refresh_rounded), onPressed: () => _refresh(full: true)),
+        ],
       ),
       body: allowed == false && !ref.watch(settingsProvider).smsEnabled && all.isEmpty
           ? _Intro(onAllow: _allow)
           : RefreshIndicator(
-              onRefresh: _refresh,
+              onRefresh: () => _refresh(full: true),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(22, 0, 22, 120),
                 children: [
                   Text('Bank SMS', style: T.title.copyWith(color: p.ink)),
+                  if (from != null) ...[
+                    const SizedBox(height: 4),
+                    Text('This cycle · ${rangeLabel(from, ref.watch(currentCycleProvider)!.end)}', style: T.label.copyWith(color: p.muted)),
+                  ],
                   const SizedBox(height: 14),
                   Row(children: [
                     Pill('Credits${newCredits > 0 ? ' · $newCredits' : ''}',
@@ -201,7 +227,7 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
                   const SizedBox(height: 14),
                   Text(
                     newOnes.isEmpty
-                        ? (list.isEmpty ? 'No bank ${debits ? 'debits' : 'credits'} found in the last 45 days.' : 'All caught up.')
+                        ? (list.isEmpty ? 'No bank ${debits ? 'debits' : 'credits'} in this cycle yet.' : 'All caught up.')
                         : '${newOnes.length} new · ${rupees(newOnes.fold<int>(0, (a, m) => a + m.amount))}',
                     style: T.sentence.copyWith(color: p.ink),
                   ),

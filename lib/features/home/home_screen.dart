@@ -118,7 +118,9 @@ List<Widget> _extras(BuildContext context, WidgetRef ref) {
   final yearAgo = DateTime.now().subtract(const Duration(days: 365));
   final yearly = all.where((e) => !isIncome(e) && e.yearly && e.date.isAfter(yearAgo)).toList();
   final aside = yearly.fold(0, (a, e) => a + e.amount) ~/ 12;
-  final sms = ref.watch(settingsProvider).smsEnabled ? (ref.watch(bankSmsProvider).value ?? const <BankMessage>[]) : const <BankMessage>[];
+  final sms = ref.watch(settingsProvider).smsEnabled
+      ? cycleSms(ref.watch(bankSmsProvider).value ?? const <BankMessage>[], ref.watch(currentCycleProvider)?.start)
+      : const <BankMessage>[];
   final credit = sms.where((m) => m.direction == 'credit' && m.status == 'new').firstOrNull;
   return [
     if (credit != null)
@@ -344,7 +346,9 @@ class _SmsButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = context.p;
-    final n = (ref.watch(bankSmsProvider).value ?? const <BankMessage>[]).where((m) => m.status == 'new').length;
+    final n = cycleSms(ref.watch(bankSmsProvider).value ?? const <BankMessage>[], ref.watch(currentCycleProvider)?.start)
+        .where((m) => m.status == 'new')
+        .length;
     return IconButton(
       tooltip: 'Bank SMS',
       onPressed: () => context.push('/sms'),
