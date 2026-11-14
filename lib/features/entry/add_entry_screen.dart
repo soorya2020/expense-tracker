@@ -301,37 +301,37 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           padding: const EdgeInsets.fromLTRB(22, 8, 22, 16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              _Tab('In', income, () => setState(() => income = true)),
-              const SizedBox(width: 18),
-              _Tab('Out', !income, () => setState(() => income = false)),
               const Spacer(),
               if (widget.args.edit != null)
                 IconButton(onPressed: _delete, icon: Icon(Icons.delete_outline_rounded, color: p.muted), tooltip: 'Delete'),
               IconButton(onPressed: () => context.pop(), icon: Icon(Icons.close_rounded, color: p.muted), tooltip: 'Close'),
             ]),
-            const SizedBox(height: 8),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text.rich(TextSpan(children: [
-                TextSpan(text: digits.isEmpty ? '0' : rupees(amount, symbol: false), style: TextStyle(color: digits.isEmpty ? p.line : accent)),
-                TextSpan(text: '|', style: TextStyle(color: p.line, fontWeight: FontWeight.w300)),
-              ]), style: T.huge.copyWith(fontSize: 58)),
-            ),
-            const SizedBox(height: 12),
+            // Amount and options sit at the bottom, right above the keypad,
+            // so everything is in easy thumb reach.
             Expanded(
               child: SingleChildScrollView(
+                reverse: true,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text.rich(TextSpan(children: [
+                      TextSpan(text: digits.isEmpty ? '0' : rupees(amount, symbol: false), style: TextStyle(color: digits.isEmpty ? p.line : accent)),
+                      TextSpan(text: '|', style: TextStyle(color: p.line, fontWeight: FontWeight.w300)),
+                    ]), style: T.huge.copyWith(fontSize: 58)),
+                  ),
+                  const SizedBox(height: 12),
                   for (final w in options) Padding(padding: const EdgeInsets.only(bottom: 12), child: w),
                 ]),
               ),
             ),
             Keypad(onKey: (k) => setState(() => digits = applyKey(digits, k))),
             const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: GoButton(onTap: amount > 0 ? _save : null, color: accent, icon: widget.args.edit != null ? Icons.check_rounded : Icons.arrow_forward_rounded),
-            ),
+            Row(children: [
+              _InOut(income: income, onChanged: (v) => setState(() => income = v)),
+              const Spacer(),
+              GoButton(onTap: amount > 0 ? _save : null, color: accent, icon: widget.args.edit != null ? Icons.check_rounded : Icons.arrow_forward_rounded),
+            ]),
           ]),
         ),
       ),
@@ -384,16 +384,33 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       };
 }
 
-class _Tab extends StatelessWidget {
-  const _Tab(this.label, this.on, this.onTap);
-  final String label;
-  final bool on;
-  final VoidCallback onTap;
+/// In / Out switch that sits next to the save button.
+class _InOut extends StatelessWidget {
+  const _InOut({required this.income, required this.onChanged});
+  final bool income;
+  final ValueChanged<bool> onChanged;
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Text(label, style: T.title.copyWith(fontSize: 28, color: on ? context.p.ink : context.p.line)),
-      );
+  Widget build(BuildContext context) {
+    final p = context.p;
+    Widget seg(String label, bool on, bool value) => GestureDetector(
+          onTap: () => onChanged(value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+            decoration: BoxDecoration(
+              color: on ? p.bg : Colors.transparent,
+              borderRadius: BorderRadius.circular(99),
+              boxShadow: on ? const [BoxShadow(color: Color(0x22000000), blurRadius: 4, offset: Offset(0, 1))] : null,
+            ),
+            child: Text(label, style: T.bodyBold.copyWith(fontSize: 16, color: on ? p.ink : p.muted)),
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(99)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [seg('In', income, true), seg('Out', !income, false)]),
+    );
+  }
 }
 
 class _ToggleRow extends StatelessWidget {

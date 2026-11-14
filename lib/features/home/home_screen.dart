@@ -43,7 +43,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text(rangeLabel(v.start, v.end), style: T.label.copyWith(color: p.muted, fontSize: 13)),
                 _Arrow('›', i > 0 ? () => setState(() => index = i - 1) : null),
                 const Spacer(),
-                if (ref.watch(settingsProvider).smsEnabled) _SmsButton(),
                 IconButton(
                   onPressed: () => context.push('/settings'),
                   icon: Icon(Icons.settings_outlined, color: p.muted, size: 22),
@@ -102,6 +101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: _Dock(
               onIn: () => context.push('/add', extra: const AddArgs(income: true)),
               onOut: () => context.push('/add', extra: const AddArgs(income: false)),
+              middle: ref.watch(settingsProvider).smsEnabled ? _SmsButton() : null,
             ),
           ),
         ]),
@@ -304,8 +304,9 @@ class _CycleTrack extends StatelessWidget {
 }
 
 class _Dock extends StatelessWidget {
-  const _Dock({required this.onIn, required this.onOut});
+  const _Dock({required this.onIn, required this.onOut, this.middle});
   final VoidCallback onIn, onOut;
+  final Widget? middle;
   @override
   Widget build(BuildContext context) {
     final p = context.p;
@@ -327,6 +328,7 @@ class _Dock extends StatelessWidget {
             ),
           ),
         ),
+        ?middle,
         Expanded(
           child: InkWell(
             customBorder: const StadiumBorder(),
@@ -349,14 +351,17 @@ class _SmsButton extends ConsumerWidget {
     final n = cycleSms(ref.watch(bankSmsProvider).value ?? const <BankMessage>[], ref.watch(currentCycleProvider)?.start)
         .where((m) => m.status == 'new')
         .length;
-    return IconButton(
-      tooltip: 'Bank SMS',
-      onPressed: () => context.push('/sms'),
-      icon: Badge(
-        isLabelVisible: n > 0,
-        backgroundColor: p.over,
-        label: Text(n > 99 ? '99+' : '$n'),
-        child: Icon(Icons.mail_outline_rounded, color: p.muted, size: 22),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: IconButton(
+        tooltip: 'Bank SMS',
+        onPressed: () => context.push('/sms'),
+        icon: Badge(
+          isLabelVisible: n > 0,
+          backgroundColor: p.over,
+          label: Text(n > 99 ? '99+' : '$n'),
+          child: Icon(Icons.mail_outline_rounded, color: p.bg, size: 24),
+        ),
       ),
     );
   }

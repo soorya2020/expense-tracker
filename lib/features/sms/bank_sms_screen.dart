@@ -22,16 +22,18 @@ void addFromSms(BuildContext context, WidgetRef ref, BankMessage m) {
   final usual = ref.read(settingsProvider).usualSalary;
   final credit = m.direction == 'credit';
   final looksLikeSalary = credit && usual > 0 && (m.amount - usual).abs() * 10 <= usual;
-  context.push('/add',
-      extra: AddArgs(
-        income: credit,
-        amount: m.amount,
-        date: m.receivedAt,
-        title: m.counterparty,
-        kind: looksLikeSalary ? IncomeKind.salary : null,
-        sourceText: m.rawText,
-        onSaved: (id) => repo.setSmsStatus([m.id], 'added', entryId: id),
-      ));
+  context.push(
+    '/add',
+    extra: AddArgs(
+      income: credit,
+      amount: m.amount,
+      date: m.receivedAt,
+      title: m.counterparty,
+      kind: looksLikeSalary ? IncomeKind.salary : null,
+      sourceText: m.rawText,
+      onSaved: (id) => repo.setSmsStatus([m.id], 'added', entryId: id),
+    ),
+  );
 }
 
 /// Credits and debits read from bank SMS, ready to add with one tap.
@@ -62,8 +64,9 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
     try {
       final n = await scanSms(ref.read(repoProvider), ref.read(settingsProvider), full: full);
       if (full && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(n == 0 ? 'No bank messages found in this cycle.' : 'Checked $n bank messages from this cycle.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(n == 0 ? 'No bank messages found in this cycle.' : 'Checked $n bank messages from this cycle.')),
+        );
       }
     } finally {
       if (mounted) setState(() => fetching = false);
@@ -78,8 +81,8 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
     if (ok) {
       await scanSms(ref.read(repoProvider), settings);
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('SMS access is off. You can allow it in Android settings for Tally.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('SMS access is off. You can allow it in Android settings for Tally.')));
     }
   }
 
@@ -88,15 +91,17 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
     if (sel.isEmpty) return;
     final repo = ref.read(repoProvider);
     final ids = sel.map((m) => m.id).toList();
-    context.push('/add',
-        extra: AddArgs(
-          income: false,
-          amount: sel.fold<int>(0, (a, m) => a + m.amount),
-          date: sel.first.receivedAt,
-          endDate: sel.last.receivedAt,
-          sourceText: '${sel.length} bank debits added as one',
-          onSaved: (id) => repo.setSmsStatus(ids, 'added', entryId: id),
-        ));
+    context.push(
+      '/add',
+      extra: AddArgs(
+        income: false,
+        amount: sel.fold<int>(0, (a, m) => a + m.amount),
+        date: sel.first.receivedAt,
+        endDate: sel.last.receivedAt,
+        sourceText: '${sel.length} bank debits added as one',
+        onSaved: (id) => repo.setSmsStatus(ids, 'added', entryId: id),
+      ),
+    );
     setState(picked.clear);
   }
 
@@ -111,37 +116,43 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(22, 22, 22, 12),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('From ${m.sender}', style: T.label.copyWith(color: p.muted)),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(16)),
-              child: Text(m.rawText, style: T.body.copyWith(color: p.ink, height: 1.4)),
-            ),
-            const SizedBox(height: 14),
-            if (m.status != 'added')
-              LineRow(
-                title: m.status == 'skipped' ? 'Bring it back' : 'Skip this one',
-                onTap: () {
-                  repo.setSmsStatus([m.id], m.status == 'skipped' ? 'new' : 'skipped');
-                  Navigator.pop(ctx);
-                },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('From ${m.sender}', style: T.label.copyWith(color: p.muted)),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(16)),
+                child: Text(m.rawText, style: T.body.copyWith(color: p.ink, height: 1.4)),
               ),
-            if (m.account != null && m.status != 'added')
-              LineRow(
-                title: 'Always skip ${m.account}',
-                subtitle: 'For accounts that aren’t yours to track, like a business card',
-                onTap: () async {
-                  await settings.addSmsSkipAccount(m.account!);
-                  final all = ref.read(bankSmsProvider).value ?? const [];
-                  await repo.setSmsStatus(
-                      all.where((x) => x.account == m.account && x.status == 'new').map((x) => x.id).toList(), 'skipped');
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-              ),
-          ]),
+              const SizedBox(height: 14),
+              if (m.status != 'added')
+                LineRow(
+                  title: m.status == 'skipped' ? 'Bring it back' : 'Skip this one',
+                  onTap: () {
+                    repo.setSmsStatus([m.id], m.status == 'skipped' ? 'new' : 'skipped');
+                    Navigator.pop(ctx);
+                  },
+                ),
+              if (m.account != null && m.status != 'added')
+                LineRow(
+                  title: 'Always skip ${m.account}',
+                  subtitle: 'For accounts that aren’t yours to track, like a business card',
+                  onTap: () async {
+                    await settings.addSmsSkipAccount(m.account!);
+                    final all = ref.read(bankSmsProvider).value ?? const [];
+                    await repo.setSmsStatus(
+                      all.where((x) => x.account == m.account && x.status == 'new').map((x) => x.id).toList(),
+                      'skipped',
+                    );
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -157,6 +168,7 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
     final newCredits = all.where((m) => m.direction == 'credit' && m.status == 'new').length;
     final newDebits = all.where((m) => m.direction == 'debit' && m.status == 'new').length;
     final selecting = picked.isNotEmpty;
+    final intro = allowed == false && !ref.watch(settingsProvider).smsEnabled && all.isEmpty;
     final pickedTotal = all.where((m) => picked.contains(m.id)).fold<int>(0, (a, m) => a + m.amount);
     final day = DateFormat('EEE d MMM');
     final time = DateFormat('h:mm a');
@@ -167,41 +179,50 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
       final d = dateOnly(m.receivedAt);
       if (d != lastDay) {
         lastDay = d;
-        rows.add(Padding(
-          padding: const EdgeInsets.only(top: 18, bottom: 4),
-          child: Text(d == dateOnly(DateTime.now()) ? 'Today' : day.format(d), style: T.caps.copyWith(color: p.muted)),
-        ));
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 18, bottom: 4),
+            child: Text(d == dateOnly(DateTime.now()) ? 'Today' : day.format(d), style: T.caps.copyWith(color: p.muted)),
+          ),
+        );
       }
-      rows.add(_SmsRow(
-        m: m,
-        selected: picked.contains(m.id),
-        onTap: () {
-          if (selecting && debits && m.status == 'new') {
-            setState(() => picked.contains(m.id) ? picked.remove(m.id) : picked.add(m.id));
-          } else if (!selecting && m.status == 'new') {
-            addFromSms(context, ref, m);
-          } else if (!selecting) {
-            _more(m);
-          }
-        },
-        onLongPress: debits && m.status == 'new' ? () => setState(() => picked.add(m.id)) : () => _more(m),
-        onMore: () => _more(m),
-        time: time.format(m.receivedAt),
-      ));
+      rows.add(
+        _SmsRow(
+          m: m,
+          selected: picked.contains(m.id),
+          onTap: () {
+            if (selecting && debits && m.status == 'new') {
+              setState(() => picked.contains(m.id) ? picked.remove(m.id) : picked.add(m.id));
+            } else if (!selecting && m.status == 'new') {
+              addFromSms(context, ref, m);
+            } else if (!selecting) {
+              _more(m);
+            }
+          },
+          onLongPress: debits && m.status == 'new' ? () => setState(() => picked.add(m.id)) : () => _more(m),
+          onMore: () => _more(m),
+          time: time.format(m.receivedAt),
+        ),
+      );
     }
 
     return Scaffold(
       appBar: AppBar(
-        leading: selecting ? IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(picked.clear)) : const BackButton(),
+        leading: selecting
+            ? IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => setState(picked.clear))
+            : const BackButton(),
         title: selecting ? Text('${picked.length} picked', style: T.bodyBold.copyWith(color: p.ink, fontSize: 17)) : null,
         actions: [
           if (!selecting && allowed == true)
             fetching
-                ? const Padding(padding: EdgeInsets.all(16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
                 : IconButton(tooltip: 'Fetch SMS again', icon: const Icon(Icons.refresh_rounded), onPressed: () => _refresh(full: true)),
         ],
       ),
-      body: allowed == false && !ref.watch(settingsProvider).smsEnabled && all.isEmpty
+      body: intro
           ? _Intro(onAllow: _allow)
           : RefreshIndicator(
               onRefresh: () => _refresh(full: true),
@@ -214,16 +235,6 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
                     Text('This cycle · ${rangeLabel(from, ref.watch(currentCycleProvider)!.end)}', style: T.label.copyWith(color: p.muted)),
                   ],
                   const SizedBox(height: 14),
-                  Row(children: [
-                    Pill('Credits${newCredits > 0 ? ' · $newCredits' : ''}',
-                        selected: !debits, onTap: () => setState(() {
-                              debits = false;
-                              picked.clear();
-                            })),
-                    const SizedBox(width: 8),
-                    Pill('Debits${newDebits > 0 ? ' · $newDebits' : ''}',
-                        selected: debits, onTap: () => setState(() => debits = true)),
-                  ]),
                   const SizedBox(height: 14),
                   Text(
                     newOnes.isEmpty
@@ -253,13 +264,69 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
                 child: BigButton('Add ${picked.length} as one · ${rupees(pickedTotal)}', onTap: () => _addPicked(all)),
               ),
             )
-          : null,
+          : intro
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 8, 22, 12),
+                child: _Tabs(
+                  debits: debits,
+                  credits: 'Credits${newCredits > 0 ? ' · $newCredits' : ''}',
+                  debitsLabel: 'Debits${newDebits > 0 ? ' · $newDebits' : ''}',
+                  onChanged: (d) => setState(() {
+                    debits = d;
+                    picked.clear();
+                  }),
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+/// Credits / Debits switch at the bottom of the page, in thumb reach.
+class _Tabs extends StatelessWidget {
+  const _Tabs({required this.debits, required this.credits, required this.debitsLabel, required this.onChanged});
+  final bool debits;
+  final String credits, debitsLabel;
+  final ValueChanged<bool> onChanged;
+  @override
+  Widget build(BuildContext context) {
+    final p = context.p;
+    Widget seg(String label, bool on, bool value) => Expanded(
+      child: GestureDetector(
+        onTap: () => onChanged(value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: on ? p.bg : Colors.transparent,
+            borderRadius: BorderRadius.circular(99),
+            boxShadow: on ? const [BoxShadow(color: Color(0x22000000), blurRadius: 4, offset: Offset(0, 1))] : null,
+          ),
+          child: Center(
+            child: Text(label, style: T.bodyBold.copyWith(fontSize: 15, color: on ? p.ink : p.muted)),
+          ),
+        ),
+      ),
+    );
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(99)),
+      child: Row(children: [seg(credits, !debits, false), seg(debitsLabel, debits, true)]),
     );
   }
 }
 
 class _SmsRow extends StatelessWidget {
-  const _SmsRow({required this.m, required this.selected, required this.onTap, required this.onLongPress, required this.onMore, required this.time});
+  const _SmsRow({
+    required this.m,
+    required this.selected,
+    required this.onTap,
+    required this.onLongPress,
+    required this.onMore,
+    required this.time,
+  });
   final BankMessage m;
   final bool selected;
   final VoidCallback onTap, onLongPress, onMore;
@@ -281,28 +348,49 @@ class _SmsRow extends StatelessWidget {
           color: selected ? p.salarySoft : null,
           border: Border(bottom: BorderSide(color: p.line)),
         ),
-        child: Row(children: [
-          if (selected) ...[Icon(Icons.check_circle_rounded, color: p.salary, size: 20), const SizedBox(width: 10)],
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(m.counterparty ?? (credit ? 'Money in' : 'Money out'),
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: T.body.copyWith(color: done ? p.muted : p.ink, fontSize: 15, decoration: m.status == 'skipped' ? TextDecoration.lineThrough : null)),
-              const SizedBox(height: 2),
-              Text(sub, style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500)),
-            ]),
-          ),
-          Text(signed(m.amount, positive: credit), style: T.bodyBold.copyWith(color: color, fontSize: 15)),
-          if (!done && !selected)
-            Padding(
-              padding: const EdgeInsets.only(left: 10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: credit ? p.salarySoft : p.surface, borderRadius: BorderRadius.circular(99)),
-                child: Text('Add', style: T.label.copyWith(color: credit ? p.salary : p.ink, fontWeight: FontWeight.w800)),
+        child: Row(
+          children: [
+            if (selected) ...[Icon(Icons.check_circle_rounded, color: p.salary, size: 20), const SizedBox(width: 10)],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    m.counterparty ?? (credit ? 'Money in' : 'Money out'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: T.body.copyWith(
+                      color: done ? p.muted : p.ink,
+                      fontSize: 15,
+                      decoration: m.status == 'skipped' ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sub,
+                    style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+                  ),
+                ],
               ),
             ),
-        ]),
+            Text(
+              signed(m.amount, positive: credit),
+              style: T.bodyBold.copyWith(color: color, fontSize: 15),
+            ),
+            if (!done && !selected)
+              Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(color: credit ? p.salarySoft : p.surface, borderRadius: BorderRadius.circular(99)),
+                  child: Text(
+                    'Add',
+                    style: T.label.copyWith(color: credit ? p.salary : p.ink, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -316,17 +404,24 @@ class _Intro extends StatelessWidget {
     final p = context.p;
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 0, 22, 30),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Bank SMS', style: T.title.copyWith(color: p.ink)),
-        const SizedBox(height: 14),
-        Text('Tally can read the credit and debit messages your bank sends, so you can add them with one tap.',
-            style: T.sentence.copyWith(color: p.ink)),
-        const SizedBox(height: 14),
-        Text('Only bank messages are read. OTPs and personal messages are ignored. Nothing leaves your phone.',
-            style: T.body.copyWith(color: p.muted, height: 1.5)),
-        const Spacer(),
-        BigButton('Allow SMS access', onTap: onAllow),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Bank SMS', style: T.title.copyWith(color: p.ink)),
+          const SizedBox(height: 14),
+          Text(
+            'Tally can read the credit and debit messages your bank sends, so you can add them with one tap.',
+            style: T.sentence.copyWith(color: p.ink),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Only bank messages are read. OTPs and personal messages are ignored. Nothing leaves your phone.',
+            style: T.body.copyWith(color: p.muted, height: 1.5),
+          ),
+          const Spacer(),
+          BigButton('Allow SMS access', onTap: onAllow),
+        ],
+      ),
     );
   }
 }
