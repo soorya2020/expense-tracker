@@ -9,6 +9,7 @@ import '../../core/money.dart';
 import '../../shared/widgets.dart';
 import '../auth/secret_entry.dart';
 import '../report/notifications.dart';
+import '../sms/sms_service.dart';
 import '../../main.dart' show scheduleNotifications;
 
 class SettingsScreen extends ConsumerWidget {
@@ -79,6 +80,22 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 26),
           const CapsLabel('Extras'),
+          LineRow(
+            title: 'Read bank SMS',
+            subtitle: 'Show credits and debits from your bank so you can add them in one tap',
+            trailing: Switch(value: s.smsEnabled, onChanged: (v) async {
+              if (v && !await askSmsPermission()) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('SMS access is off. You can allow it in Android settings for Tally.')));
+                }
+                return;
+              }
+              await s.setSmsEnabled(v);
+              if (v) await scanSms(ref.read(repoProvider), s);
+            }),
+            onTap: s.smsEnabled ? () => context.push('/sms') : null,
+          ),
           LineRow(
             title: 'Salary-day reminder',
             subtitle: 'A nudge on the first day of each cycle to log your salary',

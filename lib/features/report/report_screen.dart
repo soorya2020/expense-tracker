@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/money.dart';
 import 'insights.dart';
+import 'pdf_report.dart';
 
 /// A cycle report shown as story cards. Tap the right side for next, left for back.
 class ReportScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,20 @@ class ReportScreen extends ConsumerStatefulWidget {
 
 class _ReportScreenState extends ConsumerState<ReportScreen> {
   int i = 0;
+  bool busy = false;
+
+  Future<void> _pdf(CycleView v, List<CycleView> older) async {
+    setState(() => busy = true);
+    try {
+      final s = ref.read(settingsProvider);
+      final all = ref.read(entriesProvider).value ?? const [];
+      await shareReportPdf(v, older, all, s.startingBalance, s.startingDate);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Couldn’t make the PDF: $e')));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +92,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                     onPressed: () => ref.read(repoProvider).updateCycle(v.cycle!.copyWith(supported: Value(!v.supported))),
                     icon: Icon(v.supported ? Icons.flag_rounded : Icons.outlined_flag_rounded, color: white),
                   ),
+                IconButton(
+                  tooltip: 'Download PDF',
+                  onPressed: busy ? null : () => _pdf(v, older),
+                  icon: busy
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: white))
+                      : const Icon(Icons.picture_as_pdf_outlined, color: white),
+                ),
                 IconButton(onPressed: () => context.pop(), icon: const Icon(Icons.close_rounded, color: white)),
               ]),
               const Spacer(),

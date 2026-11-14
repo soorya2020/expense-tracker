@@ -11,6 +11,7 @@ import '../../data/stats.dart';
 import '../../shared/widgets.dart';
 import '../entry/add_entry_screen.dart';
 import '../report/insights.dart';
+import '../sms/bank_sms_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +43,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text(rangeLabel(v.start, v.end), style: T.label.copyWith(color: p.muted, fontSize: 13)),
                 _Arrow('›', i > 0 ? () => setState(() => index = i - 1) : null),
                 const Spacer(),
+                if (ref.watch(settingsProvider).smsEnabled) _SmsButton(),
                 IconButton(
                   onPressed: () => context.push('/settings'),
                   icon: Icon(Icons.settings_outlined, color: p.muted, size: 22),
@@ -116,7 +118,33 @@ List<Widget> _extras(BuildContext context, WidgetRef ref) {
   final yearAgo = DateTime.now().subtract(const Duration(days: 365));
   final yearly = all.where((e) => !isIncome(e) && e.yearly && e.date.isAfter(yearAgo)).toList();
   final aside = yearly.fold(0, (a, e) => a + e.amount) ~/ 12;
+  final sms = ref.watch(settingsProvider).smsEnabled ? (ref.watch(bankSmsProvider).value ?? const <BankMessage>[]) : const <BankMessage>[];
+  final credit = sms.where((m) => m.direction == 'credit' && m.status == 'new').firstOrNull;
   return [
+    if (credit != null)
+      Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Material(
+          color: p.salarySoft,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => addFromSms(context, ref, credit),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(children: [
+                Icon(Icons.mail_outline_rounded, color: p.salary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('${rupees(credit.amount)} credited${credit.counterparty != null ? ' from ${credit.counterparty}' : ''}',
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: T.body.copyWith(color: p.ink, fontWeight: FontWeight.w600)),
+                ),
+                Text('Add', style: T.label.copyWith(color: p.salary, fontWeight: FontWeight.w800)),
+              ]),
+            ),
+          ),
+        ),
+      ),
     for (final e in owed)
       Padding(
         padding: const EdgeInsets.only(top: 12),
@@ -308,6 +336,24 @@ class _Dock extends StatelessWidget {
           ),
         ),
       ]),
+    );
+  }
+}
+
+class _SmsButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final p = context.p;
+    final n = (ref.watch(bankSmsProvider).value ?? const <BankMessage>[]).where((m) => m.status == 'new').length;
+    return IconButton(
+      tooltip: 'Bank SMS',
+      onPressed: () => context.push('/sms'),
+      icon: Badge(
+        isLabelVisible: n > 0,
+        backgroundColor: p.over,
+        label: Text(n > 99 ? '99+' : '$n'),
+        child: Icon(Icons.mail_outline_rounded, color: p.muted, size: 22),
+      ),
     );
   }
 }

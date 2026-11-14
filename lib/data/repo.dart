@@ -16,6 +16,18 @@ class Repo {
   final AppDb db;
   final Settings settings;
 
+  // ---------- Bank SMS ----------
+
+  Stream<List<BankMessage>> watchBankSms() =>
+      (db.select(db.bankSms)..orderBy([(m) => OrderingTerm.desc(m.receivedAt)])).watch();
+
+  Future<void> insertBankSms(List<BankSmsCompanion> rows) =>
+      db.batch((b) => b.insertAll(db.bankSms, rows, mode: InsertMode.insertOrIgnore));
+
+  Future<void> setSmsStatus(List<int> ids, String status, {int? entryId}) =>
+      (db.update(db.bankSms)..where((m) => m.id.isIn(ids)))
+          .write(BankSmsCompanion(status: Value(status), entryId: Value(entryId)));
+
   // ---------- Entries ----------
 
   Stream<List<Entry>> watchEntries() {

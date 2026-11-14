@@ -8,11 +8,12 @@ import '../../core/cycle_math.dart';
 import '../../core/money.dart';
 import '../../shared/widgets.dart';
 import 'secret_entry.dart';
+import '../sms/sms_service.dart';
 import '../report/notifications.dart';
 import '../../main.dart' show scheduleNotifications;
 import '../cycle/day_strip.dart';
 
-/// First run: lock, starting balance, pay cycle day.
+/// First run: lock, starting balance, pay cycle day, bank SMS.
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});
   @override
@@ -25,7 +26,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   bool useFingerprint = false;
   String balance = '';
   int cycleDay = 1;
-  static const steps = 3;
+  static const steps = 4;
+  bool readSms = false;
 
   Future<void> _finish() async {
     final settings = ref.read(settingsProvider);
@@ -37,6 +39,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       cycleDay: cycleDay,
     );
     await ref.read(repoProvider).rollCycles();
+    await settings.setSmsEnabled(readSms);
+    if (readSms) await scanSms(ref.read(repoProvider), settings).catchError((_) => 0);
     try {
       await AppNotifications.instance.askPermission();
       await scheduleNotifications(ref.read(repoProvider), settings);
@@ -111,7 +115,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           const SizedBox(height: 12),
           Align(alignment: Alignment.centerRight, child: GoButton(onTap: () => setState(() => step = 2))),
         ]),
-      _ => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      2 => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Your pay cycle starts on the', style: T.label.copyWith(color: p.muted, fontSize: 14)),
           const SizedBox(height: 4),
           Text(ordinal(cycleDay) == 'last day' ? 'Last day' : ordinal(cycleDay), style: T.huge.copyWith(color: p.ink)),
@@ -135,7 +139,30 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             }),
           ),
           const Spacer(),
-          Align(alignment: Alignment.centerRight, child: GoButton(onTap: _finish, icon: Icons.check_rounded)),
+          Align(alignment: Alignment.centerRight, child: GoButton(onTap: () => setState(() => step = 3))),
+        ]),
+      _ => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.mail_outline_rounded, size: 44, color: p.salary),
+          const SizedBox(height: 14),
+          Text('Add money from bank SMS?', style: T.title.copyWith(color: p.ink)),
+          const SizedBox(height: 10),
+          Text(
+            'Tally can read the credit and debit messages your bank sends, so you can add them with one tap. '
+            'OTPs and personal messages are ignored, and nothing leaves your phone.',
+            style: T.body.copyWith(color: p.muted, height: 1.5),
+          ),
+          const SizedBox(height: 14),
+          Text('You can turn this on or off later in Settings.', style: T.label.copyWith(color: p.muted)),
+          const Spacer(),
+          BigButton('Allow SMS access', onTap: () async {
+            readSms = await askSmsPermission();
+            await _finish();
+          }),
+          const SizedBox(height: 10),
+          BigButton('Not now', filled: false, onTap: () {
+            readSms = false;
+            _finish();
+          }),
         ]),
     };
 

@@ -16,6 +16,7 @@ final dbProvider = Provider<AppDb>((_) => throw UnimplementedError());
 final repoProvider = Provider<Repo>((ref) => Repo(ref.watch(dbProvider), ref.read(settingsProvider)));
 
 final entriesProvider = StreamProvider<List<Entry>>((ref) => ref.watch(repoProvider).watchEntries());
+final bankSmsProvider = StreamProvider<List<BankMessage>>((ref) => ref.watch(repoProvider).watchBankSms());
 final cyclesProvider = StreamProvider<List<Cycle>>((ref) => ref.watch(repoProvider).watchCycles());
 
 /// A pay cycle with its entries and totals.

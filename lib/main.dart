@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import 'data/settings.dart';
 import 'features/auth/auth.dart';
 import 'features/entry/add_entry_screen.dart';
 import 'features/report/notifications.dart';
+import 'features/sms/sms_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +28,7 @@ Future<void> main() async {
     await AppNotifications.instance.init();
     if (settings.setupDone) await scheduleNotifications(repo, settings);
   } catch (_) {}
+  if (settings.setupDone) unawaited(scanSms(repo, settings).catchError((_) => 0));
   final launch = await AppNotifications.instance.launchPayload().catchError((_) => null);
   runApp(ProviderScope(
     overrides: [
@@ -84,6 +87,7 @@ class _TallyAppState extends ConsumerState<TallyApp> {
         if (s.setupDone) {
           final repo = ref.read(repoProvider);
           repo.rollCycles().then((_) => scheduleNotifications(repo, s));
+          scanSms(repo, s).catchError((_) => 0);
         }
       },
     );
