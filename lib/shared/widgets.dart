@@ -232,10 +232,20 @@ class EntryRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 13),
         decoration: BoxDecoration(border: Border(bottom: BorderSide(color: p.line))),
         child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-          Flexible(child: Text(name, style: T.body.copyWith(color: p.ink, fontSize: 15), overflow: TextOverflow.ellipsis)),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: name, style: T.body.copyWith(color: p.ink, fontSize: 15)),
+                TextSpan(
+                  text: '   ${e.unexpected ? '$sub · Unexpected' : sub}',
+                  style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+                ),
+              ]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           const SizedBox(width: 8),
-          Text(e.unexpected ? '$sub · Unexpected' : sub, style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500)),
-          const Spacer(),
           Text(signed(e.amount, positive: inc), style: T.bodyBold.copyWith(color: color, fontSize: 15)),
         ]),
       ),

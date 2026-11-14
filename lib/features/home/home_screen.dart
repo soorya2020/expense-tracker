@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/money.dart';
+import '../../data/db.dart';
+import '../../data/repo.dart';
 import '../../data/stats.dart';
 import '../../shared/widgets.dart';
 import '../entry/add_entry_screen.dart';
@@ -61,6 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: 18),
               Text.rich(TextSpan(children: storySpans(context, s, current: v.isCurrent)), style: T.sentence.copyWith(color: p.ink)),
+              if (v.isCurrent) ..._extras(context, ref),
               if (v.isCurrent) ...[
                 const SizedBox(height: 18),
                 _CycleTrack(day: v.dayNumber, length: v.length, start: v.start, end: v.end),
@@ -103,6 +106,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
+}
+
+/// "To repay" and "Set aside" lines on Home.
+List<Widget> _extras(BuildContext context, WidgetRef ref) {
+  final p = context.p;
+  final all = ref.watch(entriesProvider).value ?? const [];
+  final owed = all.where((e) => isIncome(e) && e.incomeKind == IncomeKind.borrowed && e.repaidAt == null).toList();
+  final yearAgo = DateTime.now().subtract(const Duration(days: 365));
+  final yearly = all.where((e) => !isIncome(e) && e.yearly && e.date.isAfter(yearAgo)).toList();
+  final aside = yearly.fold(0, (a, e) => a + e.amount) ~/ 12;
+  return [
+    for (final e in owed)
+      Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Row(children: [
+          Expanded(
+            child: Text('You owe ${e.title ?? 'someone'} ${rupees(e.amount)}',
+                style: T.body.copyWith(color: p.ink, fontWeight: FontWeight.w600)),
+          ),
+          GestureDetector(
+            onTap: () async {
+              await ref.read(repoProvider).markRepaid(e);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Marked ${rupees(e.amount)} as repaid')));
+              }
+            },
+            child: Text('Mark repaid', style: T.label.copyWith(color: p.salary, fontWeight: FontWeight.w800)),
+          ),
+        ]),
+      ),
+    if (aside > 0)
+      Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          'Set aside ${rupees(aside)} a cycle for ${yearly.map((e) => e.title ?? Reasons.label(e.reason ?? 'other')).toSet().join(', ')}.',
+          style: T.label.copyWith(color: p.muted, fontSize: 13),
+        ),
+      ),
+  ];
 }
 
 /// The plain-language sentence under the balance.

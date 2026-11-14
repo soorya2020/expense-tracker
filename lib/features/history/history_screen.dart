@@ -81,7 +81,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(leading: const BackButton()),
+      appBar: AppBar(leading: const BackButton(), actions: [
+        TextButton(
+          onPressed: () => context.push('/big-picture'),
+          child: Text('Big picture  ›', style: T.label.copyWith(color: p.salary, fontWeight: FontWeight.w800, fontSize: 13)),
+        ),
+        const SizedBox(width: 8),
+      ]),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(22, 0, 22, 40),
         children: [

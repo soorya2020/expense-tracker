@@ -234,6 +234,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
             Pill(IncomeKind.label(k), selected: kind == k, color: p.forIncome(k) == p.muted ? p.ink : p.forIncome(k), onTap: () => setState(() => kind = k)),
         ]),
         Text(_kindHint(kind), style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500)),
+        if (kind == IncomeKind.help) ..._helpPicker(p),
         Wrap(spacing: 8, runSpacing: 8, children: [
           Pill(title == null || title!.isEmpty ? (kind == IncomeKind.salary ? '+ Label' : '+ Who from') : 'From $title', outlined: true,
               onTap: () async {
@@ -328,6 +329,44 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
         ),
       ),
     );
+  }
+
+  List<Widget> _helpPicker(Palette p) {
+    final cutoff = DateTime.now().subtract(const Duration(days: 60));
+    final spends = (ref.watch(entriesProvider).value ?? const [])
+        .where((e) => !isIncome(e) && effectiveDate(e).isAfter(cutoff))
+        .toList()
+      ..sort((a, b) {
+        if (a.unexpected != b.unexpected) return a.unexpected ? -1 : 1;
+        return effectiveDate(b).compareTo(effectiveDate(a));
+      });
+    if (spends.isEmpty) return const [];
+    return [
+      const CapsLabel('What did this help with?'),
+      for (final e in spends.take(4))
+        InkWell(
+          onTap: () => setState(() => helpedEntryId = helpedEntryId == e.id ? null : e.id),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: p.line))),
+            child: Row(children: [
+              Icon(helpedEntryId == e.id ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  color: helpedEntryId == e.id ? p.help : p.line, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(e.title ?? 'Spending', style: T.body.copyWith(color: p.ink)),
+                  Text(
+                    '${e.unexpected ? 'Unexpected · ' : ''}${e.endDate != null ? rangeLabel(e.date, e.endDate!) : shortDate(e.date)}',
+                    style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+                  ),
+                ]),
+              ),
+              Text(rupees(e.amount, symbol: false), style: T.bodyBold.copyWith(color: p.ink)),
+            ]),
+          ),
+        ),
+    ];
   }
 
   String _kindHint(String k) => switch (k) {

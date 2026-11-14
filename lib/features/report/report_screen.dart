@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -70,6 +71,12 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               Row(children: [
                 Text('Your cycle · ${rangeLabel(v.start, v.end)}', style: T.label.copyWith(color: white.withValues(alpha: .8))),
                 const Spacer(),
+                if (v.cycle != null)
+                  IconButton(
+                    tooltip: v.supported ? 'Remove the Supported badge' : 'Mark as a tough cycle',
+                    onPressed: () => ref.read(repoProvider).updateCycle(v.cycle!.copyWith(supported: Value(!v.supported))),
+                    icon: Icon(v.supported ? Icons.flag_rounded : Icons.outlined_flag_rounded, color: white),
+                  ),
                 IconButton(onPressed: () => context.pop(), icon: const Icon(Icons.close_rounded, color: white)),
               ]),
               const Spacer(),
@@ -99,6 +106,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                 ),
               ),
               const Spacer(),
+              if (last && older.length >= 1) ...[
+                GestureDetector(
+                  onTap: () => context.push('/big-picture'),
+                  child: Text('See the big picture  ›', style: T.bodyBold.copyWith(color: white)),
+                ),
+                const SizedBox(height: 14),
+              ],
               if (last)
                 SizedBox(
                   width: double.infinity,

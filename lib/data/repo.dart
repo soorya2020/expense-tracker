@@ -37,6 +37,20 @@ class Repo {
 
   Future<void> restoreEntry(Entry e) => db.into(db.entries).insert(e, mode: InsertMode.insertOrReplace);
 
+  /// Marks borrowed money as paid back and logs the repayment as spending.
+  Future<void> markRepaid(Entry borrowed) async {
+    await db.transaction(() async {
+      await updateEntry(borrowed.copyWith(repaidAt: Value(DateTime.now())));
+      await addEntry(EntriesCompanion.insert(
+        kind: EntryKind.spending,
+        amount: borrowed.amount,
+        title: Value('Repaid ${borrowed.title ?? 'loan'}'),
+        category: const Value('repayment'),
+        date: dateOnly(DateTime.now()),
+      ));
+    });
+  }
+
   Future<Entry?> entry(int id) =>
       (db.select(db.entries)..where((e) => e.id.equals(id))).getSingleOrNull();
 
