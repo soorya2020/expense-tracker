@@ -34,6 +34,14 @@ android {
     // over old ones without losing data. CI writes the key from repo secrets.
     val keystoreFile = file("upload-keystore.jks")
     signingConfigs {
+        // A fixed debug key kept in the repo, so builds made without the
+        // release secrets still install over each other.
+        getByName("debug") {
+            storeFile = file("debug-shared.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
