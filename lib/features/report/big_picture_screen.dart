@@ -115,7 +115,7 @@ class BigPictureScreen extends ConsumerWidget {
           const SizedBox(height: 6),
           Row(children: [
             for (final v in done)
-              Expanded(child: Center(child: Text(mon.format(v.start), style: T.label.copyWith(color: p.muted, fontSize: 11)))),
+              Expanded(child: Center(heightFactor: 1, child: Text(mon.format(v.start), style: T.label.copyWith(color: p.muted, fontSize: 11)))),
           ]),
           const SizedBox(height: 10),
           Wrap(spacing: 14, children: [

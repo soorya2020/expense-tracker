@@ -38,7 +38,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   Widget build(BuildContext context) {
     final views = ref.watch(cycleViewsProvider);
     final idx = views.indexWhere((v) => v.start.millisecondsSinceEpoch == widget.startMillis);
-    if (idx < 0) return const Scaffold(body: Center(child: Text('This cycle has no report.')));
+    if (idx < 0) return const Scaffold(body: Center(heightFactor: 1, child: Text('This cycle has no report.')));
     final v = views[idx];
     final older = views.sublist(idx + 1);
     final cards = buildReport(v, older);
@@ -146,7 +146,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                       onTap: () => context.pop(),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: Text('Done', style: T.bodyBold.copyWith(color: bg, fontSize: 15))),
+                        child: Center(heightFactor: 1, child: Text('Done', style: T.bodyBold.copyWith(color: bg, fontSize: 15))),
                       ),
                     ),
                   ),

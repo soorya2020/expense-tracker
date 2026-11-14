@@ -323,7 +323,7 @@ class _Dock extends StatelessWidget {
               onTap: onIn,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: Text('+ In', style: T.bodyBold.copyWith(color: p.ink, fontSize: 15))),
+                child: Center(heightFactor: 1, child: Text('+ In', style: T.bodyBold.copyWith(color: p.ink, fontSize: 15))),
               ),
             ),
           ),
@@ -335,7 +335,7 @@ class _Dock extends StatelessWidget {
             onTap: onOut,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: Text('− Out', style: T.bodyBold.copyWith(color: p.bg, fontSize: 15))),
+              child: Center(heightFactor: 1, child: Text('− Out', style: T.bodyBold.copyWith(color: p.bg, fontSize: 15))),
             ),
           ),
         ),

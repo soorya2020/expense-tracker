@@ -151,7 +151,7 @@ class BigButton extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 17),
-            child: Center(child: Text(label, style: T.bodyBold.copyWith(color: fg, fontSize: 15))),
+            child: Center(heightFactor: 1, child: Text(label, style: T.bodyBold.copyWith(color: fg, fontSize: 15))),
           ),
         ),
       ),
