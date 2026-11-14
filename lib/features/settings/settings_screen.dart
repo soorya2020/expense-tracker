@@ -10,6 +10,7 @@ import '../../shared/widgets.dart';
 import '../auth/secret_entry.dart';
 import '../report/notifications.dart';
 import '../sms/sms_service.dart';
+import 'updates.dart';
 import '../../main.dart' show scheduleNotifications;
 
 class SettingsScreen extends ConsumerWidget {
@@ -104,6 +105,14 @@ class SettingsScreen extends ConsumerWidget {
               if (v) await AppNotifications.instance.askPermission();
               await scheduleNotifications(ref.read(repoProvider), s);
             }),
+          ),
+          const SizedBox(height: 26),
+          const CapsLabel('App'),
+          LineRow(
+            title: 'Check for updates',
+            subtitle: appBuild > 0 ? 'You have build $appBuild' : 'Looks for a newer Tally build',
+            trailing: Icon(Icons.chevron_right_rounded, color: p.muted),
+            onTap: () => checkForUpdates(context),
           ),
           const SizedBox(height: 30),
           Text('Tally keeps everything on this phone. Nothing is uploaded.',
