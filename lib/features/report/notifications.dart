@@ -92,4 +92,54 @@ class AppNotifications {
       );
     }
   }
+
+  static const _backupId = 3;
+  static const _billBase = 200;
+  static const _billDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'bills',
+      'Bill reminders',
+      channelDescription: 'A reminder the day before a recurring bill',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+    ),
+  );
+
+  /// Bill reminders (9 AM the day before) and the payday backup reminder.
+  Future<void> scheduleExtras({required List<(DateTime, String, String)> bills, DateTime? backupAt}) async {
+    if (!_ready) return;
+    for (var i = 0; i < 30; i++) {
+      await _plugin.cancel(id: _billBase + i);
+    }
+    await _plugin.cancel(id: _backupId);
+    final now = tz.TZDateTime.now(tz.local);
+    var i = 0;
+    for (final (day, title, body) in bills.take(30)) {
+      final at = tz.TZDateTime(tz.local, day.year, day.month, day.day, 9);
+      if (at.isBefore(now)) continue;
+      await _plugin.zonedSchedule(
+        id: _billBase + i++,
+        scheduledDate: at,
+        notificationDetails: _billDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        title: title,
+        body: body,
+        payload: 'home',
+      );
+    }
+    if (backupAt != null) {
+      final at = tz.TZDateTime(tz.local, backupAt.year, backupAt.month, backupAt.day, 9, 5);
+      if (at.isAfter(now)) {
+        await _plugin.zonedSchedule(
+          id: _backupId,
+          scheduledDate: at,
+          notificationDetails: _details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          title: 'Payday backup',
+          body: 'Save a copy of your Tally data to Drive. Tap to back up.',
+          payload: 'backup',
+        );
+      }
+    }
+  }
 }

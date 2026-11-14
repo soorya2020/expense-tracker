@@ -11,6 +11,9 @@ import '../auth/secret_entry.dart';
 import '../report/notifications.dart';
 import '../sms/sms_service.dart';
 import 'updates.dart';
+import 'package:file_picker/file_picker.dart';
+import '../../data/backup.dart';
+import '../../data/recurring.dart';
 import '../../main.dart' show scheduleNotifications;
 
 class SettingsScreen extends ConsumerWidget {
@@ -36,6 +39,15 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Pay cycle',
             trailing: TrailingText(s.cycleDay == lastDay ? 'Last day' : 'Starts on the ${ordinal(s.cycleDay)}'),
             onTap: () => context.push('/settings/cycle'),
+          ),
+          LineRow(
+            title: 'Recurring',
+            subtitle: 'Salary, rent, EMIs and subscriptions added for you',
+            trailing: TrailingText(() {
+              final n = loadRules(s).length;
+              return n == 0 ? 'None' : '$n ${n == 1 ? 'entry' : 'entries'}';
+            }()),
+            onTap: () => context.push('/settings/recurring'),
           ),
           LineRow(
             title: 'Change PIN',
@@ -107,6 +119,37 @@ class SettingsScreen extends ConsumerWidget {
             }),
           ),
           const SizedBox(height: 26),
+          const CapsLabel('Your data'),
+          LineRow(
+            title: 'Back up now',
+            subtitle: s.lastBackup == null ? 'Save everything to a file you keep on Drive' : 'Last backup: ${longDate(s.lastBackup!)}',
+            trailing: Icon(Icons.ios_share_rounded, color: p.muted, size: 20),
+            onTap: () async {
+              try {
+                await shareBackup(ref.read(dbProvider), s);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Couldn’t make the backup: $e')));
+                }
+              }
+            },
+          ),
+          LineRow(
+            title: 'Restore from a backup',
+            subtitle: 'Replaces what’s on this phone',
+            trailing: Icon(Icons.settings_backup_restore_rounded, color: p.muted, size: 20),
+            onTap: () => _restore(context, ref),
+          ),
+          LineRow(
+            title: 'Remind me to back up',
+            subtitle: 'Every payday, at 9 AM',
+            trailing: Switch(value: s.backupReminder, onChanged: (v) async {
+              await s.setBackupReminder(v);
+              if (v) await AppNotifications.instance.askPermission();
+              await scheduleNotifications(ref.read(repoProvider), s);
+            }),
+          ),
+          const SizedBox(height: 26),
           const CapsLabel('App'),
           LineRow(
             title: 'Check for updates',
@@ -120,6 +163,45 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _restore(BuildContext context, WidgetRef ref) async {
+    final p = context.p;
+    final messenger = ScaffoldMessenger.of(context);
+    final files = await FilePicker.pickFiles(dialogTitle: 'Pick your Tally backup');
+    if (files.isEmpty) return;
+    final BackupInfo b;
+    try {
+      b = readBackup(await files.first.readAsBytes());
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text('That file isn’t a Tally backup.')));
+      return;
+    }
+    if (!context.mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: p.bg,
+        title: Text('Restore this backup?', style: T.title.copyWith(color: p.ink, fontSize: 22)),
+        content: Text(
+          '${b.madeAt == null ? 'This backup' : 'The backup from ${longDate(b.madeAt!)}'} has ${b.entries} entries. '
+          'Everything on this phone will be replaced with it. Your PIN stays the same.',
+          style: T.body.copyWith(color: p.ink, height: 1.45),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Restore', style: TextStyle(color: p.over, fontWeight: FontWeight.w800))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final s = ref.read(settingsProvider), repo = ref.read(repoProvider);
+    await restoreBackup(ref.read(dbProvider), s, b);
+    await repo.rollCycles();
+    try {
+      await scheduleNotifications(repo, s);
+    } catch (_) {}
+    messenger.showSnackBar(SnackBar(content: Text('Restored ${b.entries} entries')));
   }
 
   Future<void> _editBalance(BuildContext context, WidgetRef ref) async {

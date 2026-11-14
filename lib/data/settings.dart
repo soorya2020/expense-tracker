@@ -24,6 +24,12 @@ class Settings extends ChangeNotifier {
       DateTime.fromMillisecondsSinceEpoch(_p.getInt('smsLastScan') ?? 0);
   List<String> get smsSkipAccounts => _p.getStringList('smsSkipAccounts') ?? const [];
   bool get hideAmountsInNotifications => _p.getBool('hideAmounts') ?? false;
+  String get recurringJson => _p.getString('recurring') ?? '[]';
+  DateTime? get lastBackup {
+    final v = _p.getInt('lastBackup');
+    return v == null ? null : DateTime.fromMillisecondsSinceEpoch(v);
+  }
+  bool get backupReminder => _p.getBool('backupReminder') ?? false;
   ThemeMode get themeMode => switch (_p.getString('theme')) {
         'light' => ThemeMode.light,
         'dark' => ThemeMode.dark,
@@ -55,5 +61,32 @@ class Settings extends ChangeNotifier {
   Future<void> addSmsSkipAccount(String a) =>
       _set(_p.setStringList('smsSkipAccounts', {...smsSkipAccounts, a}.toList()));
   Future<void> setHideAmounts(bool v) => _set(_p.setBool('hideAmounts', v));
+  Future<void> setRecurringJson(String v) => _set(_p.setString('recurring', v));
+  Future<void> setLastBackup(DateTime v) => _set(_p.setInt('lastBackup', v.millisecondsSinceEpoch));
+  Future<void> setBackupReminder(bool v) => _set(_p.setBool('backupReminder', v));
+
+  /// Every stored setting, for a backup.
+  Map<String, Object?> exportPrefs() => {for (final k in _p.getKeys()) k: _p.get(k)};
+
+  /// Puts back settings from a backup. Setup stays done on this phone.
+  Future<void> importPrefs(Map<String, dynamic> m) async {
+    for (final e in m.entries) {
+      final v = e.value;
+      if (e.key == 'setupDone' || e.key == 'biometric' || e.key == 'lockType') continue;
+      if (v is bool) {
+        await _p.setBool(e.key, v);
+      } else if (v is int) {
+        await _p.setInt(e.key, v);
+      } else if (v is double) {
+        await _p.setDouble(e.key, v);
+      } else if (v is String) {
+        await _p.setString(e.key, v);
+      } else if (v is List) {
+        await _p.setStringList(e.key, v.map((x) => '$x').toList());
+      }
+    }
+    notifyListeners();
+  }
+
   Future<void> setThemeMode(ThemeMode m) => _set(_p.setString('theme', m.name));
 }

@@ -15,6 +15,8 @@ import 'features/auth/auth.dart';
 import 'features/entry/add_entry_screen.dart';
 import 'features/report/notifications.dart';
 import 'features/sms/sms_service.dart';
+import 'data/recurring.dart';
+import 'core/money.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +25,10 @@ Future<void> main() async {
   final auth = Auth();
   final db = AppDb();
   final repo = Repo(db, settings);
-  if (settings.setupDone) await repo.rollCycles();
+  if (settings.setupDone) {
+    await repo.rollCycles();
+    await applyRecurring(repo, settings).catchError((_) => 0);
+  }
   try {
     await AppNotifications.instance.init();
     if (settings.setupDone) await scheduleNotifications(repo, settings);
@@ -60,6 +65,8 @@ class _TallyAppState extends ConsumerState<TallyApp> {
     _pending = null;
     if (payload.startsWith('report:')) {
       widget.router.push('/report/${payload.substring(7)}');
+    } else if (payload == 'backup') {
+      widget.router.push('/settings');
     } else if (payload == 'salary') {
       final s = ref.read(settingsProvider);
       widget.router.push('/add', extra: AddArgs(income: true, kind: 'salary', amount: s.usualSalary > 0 ? s.usualSalary : null));
@@ -86,7 +93,7 @@ class _TallyAppState extends ConsumerState<TallyApp> {
         final s = ref.read(settingsProvider);
         if (s.setupDone) {
           final repo = ref.read(repoProvider);
-          repo.rollCycles().then((_) => scheduleNotifications(repo, s));
+          repo.rollCycles().then((_) => applyRecurring(repo, s)).then((_) => scheduleNotifications(repo, s));
           scanSms(repo, s).catchError((_) => 0);
         }
       },
@@ -134,5 +141,15 @@ Future<void> scheduleNotifications(Repo repo, Settings s) async {
     report: s.reportNotify,
     salaryReminder: s.salaryReminder,
     usualSalary: s.usualSalary,
+  );
+  final bills = <(DateTime, String, String)>[];
+  for (final r in loadRules(s).where((r) => !r.income && r.remind)) {
+    final due = await nextDue(r, repo, s);
+    bills.add((due.subtract(const Duration(days: 1)), '${r.title.isEmpty ? 'A bill' : r.title} is due tomorrow',
+        '${rupees(r.amount)} on ${shortDate(due)}. Tally will add it for you.'));
+  }
+  await AppNotifications.instance.scheduleExtras(
+    bills: bills,
+    backupAt: s.backupReminder ? c.endDate.add(const Duration(days: 1)) : null,
   );
 }
