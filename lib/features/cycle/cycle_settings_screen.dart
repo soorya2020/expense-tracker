@@ -7,6 +7,7 @@ import '../../core/cycle_math.dart';
 import '../../core/money.dart';
 import '../../shared/widgets.dart';
 import 'day_strip.dart';
+import '../../main.dart' show scheduleNotifications;
 
 class CycleSettingsScreen extends ConsumerWidget {
   const CycleSettingsScreen({super.key});
@@ -27,7 +28,10 @@ class CycleSettingsScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(day == lastDay ? 'Last day' : ordinal(day), style: T.huge.copyWith(color: p.ink)),
           const SizedBox(height: 18),
-          DayStrip(selected: day, onSelect: (d) => ref.read(repoProvider).changeCycleDay(d)),
+          DayStrip(selected: day, onSelect: (d) async {
+            await ref.read(repoProvider).changeCycleDay(d);
+            await scheduleNotifications(ref.read(repoProvider), s);
+          }),
           const SizedBox(height: 18),
           if (cur != null)
             Container(
@@ -52,7 +56,10 @@ class CycleSettingsScreen extends ConsumerWidget {
           LineRow(
             title: 'Report notification',
             subtitle: 'First morning of each cycle · 9:00 AM',
-            trailing: Switch(value: s.reportNotify, onChanged: s.setReportNotify),
+            trailing: Switch(value: s.reportNotify, onChanged: (v) async {
+              await s.setReportNotify(v);
+              await scheduleNotifications(ref.read(repoProvider), s);
+            }),
           ),
         ],
       ),

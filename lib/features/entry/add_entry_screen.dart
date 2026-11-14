@@ -14,8 +14,9 @@ import 'after_save.dart';
 
 /// What the add screen opens with.
 class AddArgs {
-  const AddArgs({this.income = true, this.edit, this.amount, this.date, this.title, this.sourceText, this.onSaved});
+  const AddArgs({this.income = true, this.edit, this.amount, this.date, this.title, this.sourceText, this.onSaved, this.kind});
   final bool income;
+  final String? kind;
   final Entry? edit;
   final int? amount; // paise, prefilled (e.g. from an SMS)
   final DateTime? date;
@@ -72,6 +73,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       if (a.amount != null) digits = (a.amount! ~/ 100).toString();
       if (a.date != null) date = dateOnly(a.date!);
       title = a.title;
+      if (a.kind != null) kind = a.kind!;
       if (income && ref.read(settingsProvider).usualSalary > 0 && a.amount == null) {
         // Leave kind as Extra; Salary is one tap away.
       }

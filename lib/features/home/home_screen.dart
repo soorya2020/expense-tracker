@@ -8,6 +8,7 @@ import '../../core/money.dart';
 import '../../data/stats.dart';
 import '../../shared/widgets.dart';
 import '../entry/add_entry_screen.dart';
+import '../report/insights.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -45,6 +46,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   tooltip: 'Settings',
                 ),
               ]),
+              if (v.isCurrent && i + 1 < views.length && v.dayNumber <= 3) ...[
+                const SizedBox(height: 8),
+                _LastCycleCard(prev: views[i + 1]),
+              ],
               const SizedBox(height: 14),
               Text(v.isCurrent ? 'Balance' : (s.net >= 0 ? 'You saved' : 'You overspent'),
                   style: T.label.copyWith(color: p.muted)),
@@ -141,6 +146,35 @@ List<InlineSpan> storySpans(BuildContext context, Stats s, {required bool curren
     TextSpan(text: current ? ' salary. ' : ' salary, '),
     TextSpan(text: current ? '${rupees(left)} of it is left.' : 'keeping ${rupees(left)} of it.'),
   ];
+}
+
+class _LastCycleCard extends StatelessWidget {
+  const _LastCycleCard({required this.prev});
+  final CycleView prev;
+  @override
+  Widget build(BuildContext context) {
+    final p = context.p;
+    return Material(
+      color: p.salarySoft,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => context.push('/report/${prev.start.millisecondsSinceEpoch}'),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Last cycle: ${resultLine(prev)}', style: T.bodyBold.copyWith(color: p.ink, fontSize: 15)),
+                Text(rangeLabel(prev.start, prev.end), style: T.label.copyWith(color: p.muted)),
+              ]),
+            ),
+            Text('Report ›', style: T.label.copyWith(color: p.salary, fontWeight: FontWeight.w800, fontSize: 13)),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 class _Arrow extends StatelessWidget {

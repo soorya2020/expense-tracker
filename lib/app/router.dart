@@ -8,6 +8,7 @@ import '../features/auth/setup_screen.dart';
 import '../features/cycle/cycle_settings_screen.dart';
 import '../features/entry/add_entry_screen.dart';
 import '../features/history/history_screen.dart';
+import '../features/report/report_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/settings/settings_screen.dart';
 
@@ -43,6 +44,10 @@ GoRouter buildRouter(Settings settings, Auth auth) {
       GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
       GoRoute(path: '/settings/cycle', builder: (_, _) => const CycleSettingsScreen()),
+      GoRoute(
+        path: '/report/:start',
+        pageBuilder: (_, s) => slideUp(ReportScreen(startMillis: int.parse(s.pathParameters['start']!)), s),
+      ),
     ],
   );
 }

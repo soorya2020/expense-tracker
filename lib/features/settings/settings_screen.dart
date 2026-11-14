@@ -8,6 +8,8 @@ import '../../core/cycle_math.dart';
 import '../../core/money.dart';
 import '../../shared/widgets.dart';
 import '../auth/secret_entry.dart';
+import '../report/notifications.dart';
+import '../../main.dart' show scheduleNotifications;
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -80,7 +82,11 @@ class SettingsScreen extends ConsumerWidget {
           LineRow(
             title: 'Salary-day reminder',
             subtitle: 'A nudge on the first day of each cycle to log your salary',
-            trailing: Switch(value: s.salaryReminder, onChanged: s.setSalaryReminder),
+            trailing: Switch(value: s.salaryReminder, onChanged: (v) async {
+              await s.setSalaryReminder(v);
+              if (v) await AppNotifications.instance.askPermission();
+              await scheduleNotifications(ref.read(repoProvider), s);
+            }),
           ),
           const SizedBox(height: 30),
           Text('Tally keeps everything on this phone. Nothing is uploaded.',

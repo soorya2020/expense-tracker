@@ -8,6 +8,8 @@ import '../../core/cycle_math.dart';
 import '../../core/money.dart';
 import '../../shared/widgets.dart';
 import 'secret_entry.dart';
+import '../report/notifications.dart';
+import '../../main.dart' show scheduleNotifications;
 import '../cycle/day_strip.dart';
 
 /// First run: lock, starting balance, pay cycle day.
@@ -35,6 +37,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       cycleDay: cycleDay,
     );
     await ref.read(repoProvider).rollCycles();
+    try {
+      await AppNotifications.instance.askPermission();
+      await scheduleNotifications(ref.read(repoProvider), settings);
+    } catch (_) {}
     auth.unlock();
     if (mounted) context.go('/');
   }

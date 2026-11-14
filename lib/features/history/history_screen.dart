@@ -48,9 +48,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
           ],
           const Spacer(),
-          Text(
-            v.isCurrent ? 'now' : '${s.net >= 0 ? 'Saved' : 'Over'} ${rupees(s.net.abs(), symbol: false)}',
-            style: T.label.copyWith(color: v.isCurrent ? p.muted : (s.net >= 0 ? p.salary : p.over), fontWeight: FontWeight.w800),
+          GestureDetector(
+            onTap: v.isCurrent ? null : () => context.push('/report/${v.start.millisecondsSinceEpoch}'),
+            child: Text(
+              v.isCurrent ? 'now' : '${s.net >= 0 ? 'Saved' : 'Over'} ${rupees(s.net.abs(), symbol: false)} · Report ›',
+              style: T.label.copyWith(color: v.isCurrent ? p.muted : (s.net >= 0 ? p.salary : p.over), fontWeight: FontWeight.w800),
+            ),
           ),
         ]),
       ));
