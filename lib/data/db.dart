@@ -48,6 +48,7 @@ class Entries extends Table {
   DateTimeColumn get repaidAt => dateTime().nullable()();
   TextColumn get note => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get tag => text().nullable()(); // spending category id, e.g. 'food'
 }
 
 /// One row per pay cycle. Real dates are stored so changing the start day
@@ -76,6 +77,7 @@ class BankSms extends Table {
   TextColumn get status => text().withDefault(const Constant('new'))();
   IntColumn get entryId => integer().nullable()();
   TextColumn get rawText => text()();
+  TextColumn get tag => text().nullable()(); // category the user picked; null = guessed
 }
 
 @DriftDatabase(tables: [Entries, Cycles, BankSms])
@@ -83,5 +85,15 @@ class AppDb extends _$AppDb {
   AppDb([QueryExecutor? e]) : super(e ?? driftDatabase(name: 'tally'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(entries, entries.tag);
+            await m.addColumn(bankSms, bankSms.tag);
+          }
+        },
+      );
 }

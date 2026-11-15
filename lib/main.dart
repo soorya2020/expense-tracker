@@ -34,7 +34,7 @@ Future<void> main() async {
     if (settings.setupDone) await scheduleNotifications(repo, settings);
   } catch (_) {}
   if (settings.setupDone) unawaited(scanSms(repo, settings).catchError((_) => 0));
-  final launch = await AppNotifications.instance.launchPayload().catchError((_) => null);
+  final launch = await AppNotifications.instance.launchPayload().catchError((_) => null) ?? await _widgetLaunch();
   runApp(ProviderScope(
     overrides: [
       settingsProvider.overrideWith((_) => settings),
@@ -43,6 +43,15 @@ Future<void> main() async {
     ],
     child: TallyApp(router: buildRouter(settings, auth), pendingPayload: launch),
   ));
+}
+
+/// "add:in" or "add:out" when a home screen widget button opened the app.
+Future<String?> _widgetLaunch() async {
+  try {
+    return await const MethodChannel('tally/app').invokeMethod<String>('launchAction');
+  } catch (_) {
+    return null;
+  }
 }
 
 class TallyApp extends ConsumerStatefulWidget {
@@ -65,6 +74,10 @@ class _TallyAppState extends ConsumerState<TallyApp> {
     _pending = null;
     if (payload.startsWith('report:')) {
       widget.router.push('/report/${payload.substring(7)}');
+    } else if (payload == 'budgets') {
+      widget.router.push('/settings/budgets');
+    } else if (payload == 'add:in' || payload == 'add:out') {
+      widget.router.push('/add', extra: AddArgs(income: payload == 'add:in'));
     } else if (payload == 'backup') {
       widget.router.push('/settings');
     } else if (payload == 'salary') {
@@ -85,6 +98,10 @@ class _TallyAppState extends ConsumerState<TallyApp> {
     super.initState();
     _pending = widget.pendingPayload;
     AppNotifications.instance.onOpen = _open;
+    // Widget buttons tapped while Tally is already open.
+    const MethodChannel('tally/app').setMethodCallHandler((c) async {
+      if (c.method == 'action' && c.arguments is String) _open(c.arguments as String);
+    });
     ref.read(authProvider).addListener(_onAuth);
     _life = AppLifecycleListener(
       onHide: () => ref.read(authProvider).onBackground(),

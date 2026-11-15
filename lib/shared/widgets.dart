@@ -83,12 +83,13 @@ String applyKey(String current, String k, {int max = 9}) {
 
 /// A rounded pill. Filled when [selected].
 class Pill extends StatelessWidget {
-  const Pill(this.label, {super.key, this.selected = false, this.color, this.outlined = false, this.onTap, this.icon});
+  const Pill(this.label, {super.key, this.selected = false, this.color, this.outlined = false, this.onTap, this.icon, this.dot});
   final String label;
   final bool selected, outlined;
   final Color? color;
   final VoidCallback? onTap;
   final IconData? icon;
+  final Color? dot; // a small colour dot before the label, e.g. a category
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +116,7 @@ class Pill extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[Icon(icon, size: 15, color: fg), const SizedBox(width: 6)],
+                if (dot != null && !selected) ...[Container(width: 8, height: 8, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)), const SizedBox(width: 7)],
                   Text(label, style: T.label.copyWith(color: fg, fontSize: 13)),
                 ],
               ),

@@ -28,7 +28,13 @@ class Repo {
       (db.update(db.bankSms)..where((m) => m.id.isIn(ids)))
           .write(BankSmsCompanion(status: Value(status), entryId: Value(entryId)));
 
+  Future<void> setSmsTag(int id, String? tag) =>
+      (db.update(db.bankSms)..where((m) => m.id.equals(id))).write(BankSmsCompanion(tag: Value(tag)));
+
   // ---------- Entries ----------
+
+  Future<void> setEntryTag(int id, String? tag) =>
+      (db.update(db.entries)..where((e) => e.id.equals(id))).write(EntriesCompanion(tag: Value(tag)));
 
   Stream<List<Entry>> watchEntries() {
     final q = db.select(db.entries)

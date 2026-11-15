@@ -14,6 +14,9 @@ import '../../shared/widgets.dart';
 import '../entry/add_entry_screen.dart';
 import '../report/insights.dart';
 import '../sms/bank_sms_screen.dart';
+import '../settings/budgets_screen.dart';
+import '../widget/home_widgets.dart';
+import 'budget_cards.dart';
 import 'daily_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -53,6 +56,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       known.addAll(v.entries.map((e) => e.id));
       seeded = true;
+      if (v.isCurrent) {
+        checkBudgetAlerts(ref.read(settingsProvider), v);
+        pushWidgetData(ref.read(settingsProvider), v, bal);
+      }
     });
 
     return Scaffold(
@@ -140,7 +147,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                       if (v.isCurrent) ...[
-                        if (s.overSalary > 0) const SizedBox(height: 14),
+                        BudgetNudge(v: v),
+                        const SizedBox(height: 14),
                         RiseIn(
                           delay: 100,
                           child: DailyCard(
@@ -149,6 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             end: v.end,
                           ),
                         ),
+                        RiseIn(delay: 150, child: WhereItWent(v: v)),
                         ..._extras(context, ref),
                       ],
                       const SizedBox(height: 16),

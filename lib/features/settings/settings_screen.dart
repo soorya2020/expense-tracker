@@ -12,6 +12,7 @@ import '../report/notifications.dart';
 import '../sms/sms_service.dart';
 import 'updates.dart';
 import 'package:file_picker/file_picker.dart';
+import '../../data/budgets.dart';
 import '../../data/backup.dart';
 import '../../data/recurring.dart';
 import '../../main.dart' show scheduleNotifications;
@@ -50,9 +51,23 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push('/settings/recurring'),
           ),
           LineRow(
+            title: 'Budgets',
+            subtitle: 'A monthly cap for Food, Shopping or anything else',
+            trailing: TrailingText(() {
+              final n = loadBudgets(s).length;
+              return n == 0 ? 'None' : '$n set';
+            }()),
+            onTap: () => context.push('/settings/budgets'),
+          ),
+          LineRow(
             title: 'Change PIN',
             trailing: const TrailingText('PIN'),
             onTap: () => _changeSecret(context, ref),
+          ),
+          LineRow(
+            title: 'Hide amounts on widgets',
+            subtitle: 'Home screen widgets show ₹ •••• instead of your numbers',
+            trailing: Switch(value: s.widgetHide, onChanged: (v) => s.setWidgetHide(v)),
           ),
           LineRow(
             title: 'Fingerprint unlock',

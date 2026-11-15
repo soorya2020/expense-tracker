@@ -93,6 +93,23 @@ class AppNotifications {
     }
   }
 
+  static const _budgetBase = 400;
+  static const _budgetDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'budgets',
+      'Budget alerts',
+      channelDescription: 'When a category passes 80% of its budget, or goes over',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+    ),
+  );
+
+  /// Shows a budget alert now. One per category, so a newer one replaces the older.
+  Future<void> showBudget(int n, String title, String body) async {
+    if (!_ready) return;
+    await _plugin.show(id: _budgetBase + n % 100, title: title, body: body, notificationDetails: _budgetDetails, payload: 'budgets');
+  }
+
   static const _backupId = 3;
   static const _billBase = 200;
   static const _billDetails = NotificationDetails(

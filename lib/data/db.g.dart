@@ -179,6 +179,15 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _tagMeta = const VerificationMeta('tag');
+  @override
+  late final GeneratedColumn<String> tag = GeneratedColumn<String>(
+    'tag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -197,6 +206,7 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     repaidAt,
     note,
     createdAt,
+    tag,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -312,6 +322,12 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('tag')) {
+      context.handle(
+        _tagMeta,
+        tag.isAcceptableOrUnknown(data['tag']!, _tagMeta),
+      );
+    }
     return context;
   }
 
@@ -385,6 +401,10 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      tag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tag'],
+      ),
     );
   }
 
@@ -411,6 +431,7 @@ class Entry extends DataClass implements Insertable<Entry> {
   final DateTime? repaidAt;
   final String? note;
   final DateTime createdAt;
+  final String? tag;
   const Entry({
     required this.id,
     required this.kind,
@@ -428,6 +449,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     this.repaidAt,
     this.note,
     required this.createdAt,
+    this.tag,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -466,6 +488,9 @@ class Entry extends DataClass implements Insertable<Entry> {
       map['note'] = Variable<String>(note);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || tag != null) {
+      map['tag'] = Variable<String>(tag);
+    }
     return map;
   }
 
@@ -503,6 +528,7 @@ class Entry extends DataClass implements Insertable<Entry> {
           : Value(repaidAt),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       createdAt: Value(createdAt),
+      tag: tag == null && nullToAbsent ? const Value.absent() : Value(tag),
     );
   }
 
@@ -528,6 +554,7 @@ class Entry extends DataClass implements Insertable<Entry> {
       repaidAt: serializer.fromJson<DateTime?>(json['repaidAt']),
       note: serializer.fromJson<String?>(json['note']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      tag: serializer.fromJson<String?>(json['tag']),
     );
   }
   @override
@@ -550,6 +577,7 @@ class Entry extends DataClass implements Insertable<Entry> {
       'repaidAt': serializer.toJson<DateTime?>(repaidAt),
       'note': serializer.toJson<String?>(note),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'tag': serializer.toJson<String?>(tag),
     };
   }
 
@@ -570,6 +598,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     Value<DateTime?> repaidAt = const Value.absent(),
     Value<String?> note = const Value.absent(),
     DateTime? createdAt,
+    Value<String?> tag = const Value.absent(),
   }) => Entry(
     id: id ?? this.id,
     kind: kind ?? this.kind,
@@ -589,6 +618,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     repaidAt: repaidAt.present ? repaidAt.value : this.repaidAt,
     note: note.present ? note.value : this.note,
     createdAt: createdAt ?? this.createdAt,
+    tag: tag.present ? tag.value : this.tag,
   );
   Entry copyWithCompanion(EntriesCompanion data) {
     return Entry(
@@ -614,6 +644,7 @@ class Entry extends DataClass implements Insertable<Entry> {
       repaidAt: data.repaidAt.present ? data.repaidAt.value : this.repaidAt,
       note: data.note.present ? data.note.value : this.note,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      tag: data.tag.present ? data.tag.value : this.tag,
     );
   }
 
@@ -635,7 +666,8 @@ class Entry extends DataClass implements Insertable<Entry> {
           ..write('helpedEntryId: $helpedEntryId, ')
           ..write('repaidAt: $repaidAt, ')
           ..write('note: $note, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('tag: $tag')
           ..write(')'))
         .toString();
   }
@@ -658,6 +690,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     repaidAt,
     note,
     createdAt,
+    tag,
   );
   @override
   bool operator ==(Object other) =>
@@ -678,7 +711,8 @@ class Entry extends DataClass implements Insertable<Entry> {
           other.helpedEntryId == this.helpedEntryId &&
           other.repaidAt == this.repaidAt &&
           other.note == this.note &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.tag == this.tag);
 }
 
 class EntriesCompanion extends UpdateCompanion<Entry> {
@@ -698,6 +732,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   final Value<DateTime?> repaidAt;
   final Value<String?> note;
   final Value<DateTime> createdAt;
+  final Value<String?> tag;
   const EntriesCompanion({
     this.id = const Value.absent(),
     this.kind = const Value.absent(),
@@ -715,6 +750,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     this.repaidAt = const Value.absent(),
     this.note = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.tag = const Value.absent(),
   });
   EntriesCompanion.insert({
     this.id = const Value.absent(),
@@ -733,6 +769,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     this.repaidAt = const Value.absent(),
     this.note = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.tag = const Value.absent(),
   }) : kind = Value(kind),
        amount = Value(amount),
        date = Value(date);
@@ -753,6 +790,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     Expression<DateTime>? repaidAt,
     Expression<String>? note,
     Expression<DateTime>? createdAt,
+    Expression<String>? tag,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -771,6 +809,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
       if (repaidAt != null) 'repaid_at': repaidAt,
       if (note != null) 'note': note,
       if (createdAt != null) 'created_at': createdAt,
+      if (tag != null) 'tag': tag,
     });
   }
 
@@ -791,6 +830,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     Value<DateTime?>? repaidAt,
     Value<String?>? note,
     Value<DateTime>? createdAt,
+    Value<String?>? tag,
   }) {
     return EntriesCompanion(
       id: id ?? this.id,
@@ -809,6 +849,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
       repaidAt: repaidAt ?? this.repaidAt,
       note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,
+      tag: tag ?? this.tag,
     );
   }
 
@@ -863,6 +904,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (tag.present) {
+      map['tag'] = Variable<String>(tag.value);
+    }
     return map;
   }
 
@@ -884,7 +928,8 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
           ..write('helpedEntryId: $helpedEntryId, ')
           ..write('repaidAt: $repaidAt, ')
           ..write('note: $note, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('tag: $tag')
           ..write(')'))
         .toString();
   }
@@ -1461,6 +1506,15 @@ class $BankSmsTable extends BankSms with TableInfo<$BankSmsTable, BankMessage> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _tagMeta = const VerificationMeta('tag');
+  @override
+  late final GeneratedColumn<String> tag = GeneratedColumn<String>(
+    'tag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1474,6 +1528,7 @@ class $BankSmsTable extends BankSms with TableInfo<$BankSmsTable, BankMessage> {
     status,
     entryId,
     rawText,
+    tag,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1565,6 +1620,12 @@ class $BankSmsTable extends BankSms with TableInfo<$BankSmsTable, BankMessage> {
     } else if (isInserting) {
       context.missing(_rawTextMeta);
     }
+    if (data.containsKey('tag')) {
+      context.handle(
+        _tagMeta,
+        tag.isAcceptableOrUnknown(data['tag']!, _tagMeta),
+      );
+    }
     return context;
   }
 
@@ -1618,6 +1679,10 @@ class $BankSmsTable extends BankSms with TableInfo<$BankSmsTable, BankMessage> {
         DriftSqlType.string,
         data['${effectivePrefix}raw_text'],
       )!,
+      tag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tag'],
+      ),
     );
   }
 
@@ -1639,6 +1704,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
   final String status;
   final int? entryId;
   final String rawText;
+  final String? tag;
   const BankMessage({
     required this.id,
     required this.refNo,
@@ -1651,6 +1717,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
     required this.status,
     this.entryId,
     required this.rawText,
+    this.tag,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1672,6 +1739,9 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
       map['entry_id'] = Variable<int>(entryId);
     }
     map['raw_text'] = Variable<String>(rawText);
+    if (!nullToAbsent || tag != null) {
+      map['tag'] = Variable<String>(tag);
+    }
     return map;
   }
 
@@ -1694,6 +1764,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
           ? const Value.absent()
           : Value(entryId),
       rawText: Value(rawText),
+      tag: tag == null && nullToAbsent ? const Value.absent() : Value(tag),
     );
   }
 
@@ -1714,6 +1785,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
       status: serializer.fromJson<String>(json['status']),
       entryId: serializer.fromJson<int?>(json['entryId']),
       rawText: serializer.fromJson<String>(json['rawText']),
+      tag: serializer.fromJson<String?>(json['tag']),
     );
   }
   @override
@@ -1731,6 +1803,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
       'status': serializer.toJson<String>(status),
       'entryId': serializer.toJson<int?>(entryId),
       'rawText': serializer.toJson<String>(rawText),
+      'tag': serializer.toJson<String?>(tag),
     };
   }
 
@@ -1746,6 +1819,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
     String? status,
     Value<int?> entryId = const Value.absent(),
     String? rawText,
+    Value<String?> tag = const Value.absent(),
   }) => BankMessage(
     id: id ?? this.id,
     refNo: refNo ?? this.refNo,
@@ -1758,6 +1832,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
     status: status ?? this.status,
     entryId: entryId.present ? entryId.value : this.entryId,
     rawText: rawText ?? this.rawText,
+    tag: tag.present ? tag.value : this.tag,
   );
   BankMessage copyWithCompanion(BankSmsCompanion data) {
     return BankMessage(
@@ -1776,6 +1851,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
       status: data.status.present ? data.status.value : this.status,
       entryId: data.entryId.present ? data.entryId.value : this.entryId,
       rawText: data.rawText.present ? data.rawText.value : this.rawText,
+      tag: data.tag.present ? data.tag.value : this.tag,
     );
   }
 
@@ -1792,7 +1868,8 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
           ..write('receivedAt: $receivedAt, ')
           ..write('status: $status, ')
           ..write('entryId: $entryId, ')
-          ..write('rawText: $rawText')
+          ..write('rawText: $rawText, ')
+          ..write('tag: $tag')
           ..write(')'))
         .toString();
   }
@@ -1810,6 +1887,7 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
     status,
     entryId,
     rawText,
+    tag,
   );
   @override
   bool operator ==(Object other) =>
@@ -1825,7 +1903,8 @@ class BankMessage extends DataClass implements Insertable<BankMessage> {
           other.receivedAt == this.receivedAt &&
           other.status == this.status &&
           other.entryId == this.entryId &&
-          other.rawText == this.rawText);
+          other.rawText == this.rawText &&
+          other.tag == this.tag);
 }
 
 class BankSmsCompanion extends UpdateCompanion<BankMessage> {
@@ -1840,6 +1919,7 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
   final Value<String> status;
   final Value<int?> entryId;
   final Value<String> rawText;
+  final Value<String?> tag;
   const BankSmsCompanion({
     this.id = const Value.absent(),
     this.refNo = const Value.absent(),
@@ -1852,6 +1932,7 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
     this.status = const Value.absent(),
     this.entryId = const Value.absent(),
     this.rawText = const Value.absent(),
+    this.tag = const Value.absent(),
   });
   BankSmsCompanion.insert({
     this.id = const Value.absent(),
@@ -1865,6 +1946,7 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
     this.status = const Value.absent(),
     this.entryId = const Value.absent(),
     required String rawText,
+    this.tag = const Value.absent(),
   }) : refNo = Value(refNo),
        direction = Value(direction),
        amount = Value(amount),
@@ -1883,6 +1965,7 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
     Expression<String>? status,
     Expression<int>? entryId,
     Expression<String>? rawText,
+    Expression<String>? tag,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1896,6 +1979,7 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
       if (status != null) 'status': status,
       if (entryId != null) 'entry_id': entryId,
       if (rawText != null) 'raw_text': rawText,
+      if (tag != null) 'tag': tag,
     });
   }
 
@@ -1911,6 +1995,7 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
     Value<String>? status,
     Value<int?>? entryId,
     Value<String>? rawText,
+    Value<String?>? tag,
   }) {
     return BankSmsCompanion(
       id: id ?? this.id,
@@ -1924,6 +2009,7 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
       status: status ?? this.status,
       entryId: entryId ?? this.entryId,
       rawText: rawText ?? this.rawText,
+      tag: tag ?? this.tag,
     );
   }
 
@@ -1963,6 +2049,9 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
     if (rawText.present) {
       map['raw_text'] = Variable<String>(rawText.value);
     }
+    if (tag.present) {
+      map['tag'] = Variable<String>(tag.value);
+    }
     return map;
   }
 
@@ -1979,7 +2068,8 @@ class BankSmsCompanion extends UpdateCompanion<BankMessage> {
           ..write('receivedAt: $receivedAt, ')
           ..write('status: $status, ')
           ..write('entryId: $entryId, ')
-          ..write('rawText: $rawText')
+          ..write('rawText: $rawText, ')
+          ..write('tag: $tag')
           ..write(')'))
         .toString();
   }
@@ -2019,6 +2109,7 @@ typedef $$EntriesTableCreateCompanionBuilder = EntriesCompanion Function({
   Value<DateTime?> repaidAt,
   Value<String?> note,
   Value<DateTime> createdAt,
+  Value<String?> tag,
 });
 typedef $$EntriesTableUpdateCompanionBuilder = EntriesCompanion Function({
   Value<int> id,
@@ -2037,6 +2128,7 @@ typedef $$EntriesTableUpdateCompanionBuilder = EntriesCompanion Function({
   Value<DateTime?> repaidAt,
   Value<String?> note,
   Value<DateTime> createdAt,
+  Value<String?> tag,
 });
 
 class $$EntriesTableFilterComposer extends Composer<_$AppDb, $EntriesTable> {
@@ -2124,6 +2216,11 @@ class $$EntriesTableFilterComposer extends Composer<_$AppDb, $EntriesTable> {
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tag => $composableBuilder(
+    column: $table.tag,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2215,6 +2312,11 @@ class $$EntriesTableOrderingComposer extends Composer<_$AppDb, $EntriesTable> {
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get tag => $composableBuilder(
+    column: $table.tag,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$EntriesTableAnnotationComposer
@@ -2279,6 +2381,9 @@ class $$EntriesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get tag =>
+      $composableBuilder(column: $table.tag, builder: (column) => column);
 }
 
 class $$EntriesTableTableManager
@@ -2325,6 +2430,7 @@ class $$EntriesTableTableManager
                 Value<DateTime?> repaidAt = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> tag = const Value.absent(),
               }) => EntriesCompanion(
                 id: id,
                 kind: kind,
@@ -2342,6 +2448,7 @@ class $$EntriesTableTableManager
                 repaidAt: repaidAt,
                 note: note,
                 createdAt: createdAt,
+                tag: tag,
               ),
           createCompanionCallback:
               ({
@@ -2361,6 +2468,7 @@ class $$EntriesTableTableManager
                 Value<DateTime?> repaidAt = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> tag = const Value.absent(),
               }) => EntriesCompanion.insert(
                 id: id,
                 kind: kind,
@@ -2378,6 +2486,7 @@ class $$EntriesTableTableManager
                 repaidAt: repaidAt,
                 note: note,
                 createdAt: createdAt,
+                tag: tag,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -2644,6 +2753,7 @@ typedef $$BankSmsTableCreateCompanionBuilder = BankSmsCompanion Function({
   Value<String> status,
   Value<int?> entryId,
   required String rawText,
+  Value<String?> tag,
 });
 typedef $$BankSmsTableUpdateCompanionBuilder = BankSmsCompanion Function({
   Value<int> id,
@@ -2657,6 +2767,7 @@ typedef $$BankSmsTableUpdateCompanionBuilder = BankSmsCompanion Function({
   Value<String> status,
   Value<int?> entryId,
   Value<String> rawText,
+  Value<String?> tag,
 });
 
 class $$BankSmsTableFilterComposer extends Composer<_$AppDb, $BankSmsTable> {
@@ -2719,6 +2830,11 @@ class $$BankSmsTableFilterComposer extends Composer<_$AppDb, $BankSmsTable> {
 
   ColumnFilters<String> get rawText => $composableBuilder(
     column: $table.rawText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tag => $composableBuilder(
+    column: $table.tag,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2785,6 +2901,11 @@ class $$BankSmsTableOrderingComposer extends Composer<_$AppDb, $BankSmsTable> {
     column: $table.rawText,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get tag => $composableBuilder(
+    column: $table.tag,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BankSmsTableAnnotationComposer
@@ -2832,6 +2953,9 @@ class $$BankSmsTableAnnotationComposer
 
   GeneratedColumn<String> get rawText =>
       $composableBuilder(column: $table.rawText, builder: (column) => column);
+
+  GeneratedColumn<String> get tag =>
+      $composableBuilder(column: $table.tag, builder: (column) => column);
 }
 
 class $$BankSmsTableTableManager
@@ -2873,6 +2997,7 @@ class $$BankSmsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<int?> entryId = const Value.absent(),
                 Value<String> rawText = const Value.absent(),
+                Value<String?> tag = const Value.absent(),
               }) => BankSmsCompanion(
                 id: id,
                 refNo: refNo,
@@ -2885,6 +3010,7 @@ class $$BankSmsTableTableManager
                 status: status,
                 entryId: entryId,
                 rawText: rawText,
+                tag: tag,
               ),
           createCompanionCallback:
               ({
@@ -2899,6 +3025,7 @@ class $$BankSmsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<int?> entryId = const Value.absent(),
                 required String rawText,
+                Value<String?> tag = const Value.absent(),
               }) => BankSmsCompanion.insert(
                 id: id,
                 refNo: refNo,
@@ -2911,6 +3038,7 @@ class $$BankSmsTableTableManager
                 status: status,
                 entryId: entryId,
                 rawText: rawText,
+                tag: tag,
               ),
           withReferenceMapper: (p0) => p0
               .map(

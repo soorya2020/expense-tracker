@@ -8,10 +8,37 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
+    private var appChannel: MethodChannel? = null
+    private var launchAction: String? = null
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        launchAction = intent?.getStringExtra(TallyWidgets.EXTRA_ACTION)
+        super.onCreate(savedInstanceState)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val action = intent.getStringExtra(TallyWidgets.EXTRA_ACTION) ?: return
+        appChannel?.invokeMethod("action", action)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "tally/app").setMethodCallHandler { call, result ->
-            if (call.method == "openUrl") {
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "tally/widget").setMethodCallHandler { call, result ->
+            if (call.method == "update") {
+                @Suppress("UNCHECKED_CAST")
+                TallyWidgets.save(this, call.arguments as Map<String, String>)
+                result.success(true)
+            } else {
+                result.notImplemented()
+            }
+        }
+        appChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "tally/app")
+        appChannel!!.setMethodCallHandler { call, result ->
+            if (call.method == "launchAction") {
+                result.success(launchAction)
+                launchAction = null
+            } else if (call.method == "openUrl") {
                 try {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(call.argument<String>("url"))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     result.success(true)
