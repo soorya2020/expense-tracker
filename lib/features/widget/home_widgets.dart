@@ -41,7 +41,7 @@ Future<void> pushWidgetData(Settings s, CycleView cur, int balance) async {
   }
   final budgets = [
     for (final l in budgetLines(s, cur.entries).where((l) => l.cap != null).take(4))
-      '${l.cat.label}|${(l.used * 100).round()}|${l.state.name}',
+      '${l.cat.label}|${(l.used * 100).round()}|${l.state.name}|${l.cat.color.toARGB32()}',
   ].join(';');
   final daysLeft = cur.length - cur.dayNumber;
   final sentence = switch (d.pace) {
