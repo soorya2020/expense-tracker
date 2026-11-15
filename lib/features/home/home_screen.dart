@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/money.dart';
+import '../../data/daily.dart';
 import '../../data/db.dart';
 import '../../data/repo.dart';
 import '../../data/stats.dart';
@@ -12,6 +13,7 @@ import '../../shared/widgets.dart';
 import '../entry/add_entry_screen.dart';
 import '../report/insights.dart';
 import '../sms/bank_sms_screen.dart';
+import 'daily_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -63,11 +65,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Text(v.isCurrent ? rupees(bal) : rupees(s.net.abs()), style: T.huge.copyWith(color: p.ink)),
               ),
               const SizedBox(height: 18),
-              Text.rich(TextSpan(children: storySpans(context, s, current: v.isCurrent)), style: T.sentence.copyWith(color: p.ink)),
-              if (v.isCurrent) ..._extras(context, ref),
+              if (!v.isCurrent || s.overSalary > 0)
+                Text.rich(TextSpan(children: storySpans(context, s, current: v.isCurrent)), style: T.sentence.copyWith(color: p.ink)),
               if (v.isCurrent) ...[
-                const SizedBox(height: 18),
-                _CycleTrack(day: v.dayNumber, length: v.length, start: v.start, end: v.end),
+                if (s.overSalary > 0) const SizedBox(height: 14),
+                DailyCard(
+                  d: DailySpend.of(v.entries, v.start, v.end, DateTime.now(), usualSalary: ref.watch(settingsProvider).usualSalary),
+                  start: v.start,
+                  end: v.end,
+                ),
+                ..._extras(context, ref),
               ],
               const SizedBox(height: 16),
               if (v.entries.isEmpty)
@@ -262,45 +269,6 @@ class _Arrow extends StatelessWidget {
           child: Text(t, style: T.bodyBold.copyWith(fontSize: 18, color: onTap == null ? context.p.line : context.p.muted)),
         ),
       );
-}
-
-class _CycleTrack extends StatelessWidget {
-  const _CycleTrack({required this.day, required this.length, required this.start, required this.end});
-  final int day, length;
-  final DateTime start, end;
-  @override
-  Widget build(BuildContext context) {
-    final p = context.p;
-    final f = (day / length).clamp(0.0, 1.0);
-    return Column(children: [
-      LayoutBuilder(builder: (_, c) {
-        final w = c.maxWidth;
-        return SizedBox(
-          height: 16,
-          child: Stack(alignment: Alignment.centerLeft, children: [
-            Container(height: 4, decoration: BoxDecoration(color: p.line, borderRadius: BorderRadius.circular(2))),
-            Container(width: w * f, height: 4, decoration: BoxDecoration(color: p.ink, borderRadius: BorderRadius.circular(2))),
-            Positioned(
-              left: (w * f - 8).clamp(0, w - 16),
-              child: Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(color: p.ink, shape: BoxShape.circle, border: Border.all(color: p.bg, width: 3)),
-              ),
-            ),
-          ]),
-        );
-      }),
-      const SizedBox(height: 6),
-      Row(children: [
-        Text(shortDate(start), style: T.label.copyWith(color: p.muted, fontSize: 11)),
-        const Spacer(),
-        Text('day $day · ${length - day} to go', style: T.label.copyWith(color: p.muted, fontSize: 11)),
-        const Spacer(),
-        Text(shortDate(end), style: T.label.copyWith(color: p.muted, fontSize: 11)),
-      ]),
-    ]);
-  }
 }
 
 class _Dock extends StatelessWidget {

@@ -69,6 +69,7 @@ Everything stays on your phone. There is no account and no server.
 ### Everything else
 - **4-digit PIN** with optional **fingerprint** unlock. The app locks again after a minute in the background.
 - **Check for updates** in Settings finds the newest build and downloads it. Updates install over the current version and keep your data.
+- **Spent per day** on Home: a bar for each day of the cycle (rent and bills kept apart), a dashed line for what you can still spend each day, an On track / Too fast chip, and how far you are through the cycle and your salary.
 - Light and dark themes, a two-colour ₹ app icon, Inter Tight type and controls placed in easy thumb reach.
 
 ---
