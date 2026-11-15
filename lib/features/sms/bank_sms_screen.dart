@@ -38,7 +38,7 @@ void addFromSms(BuildContext context, WidgetRef ref, BankMessage m) {
 
 /// Credits and debits read from bank SMS, ready to add with one tap.
 class BankSmsScreen extends ConsumerStatefulWidget {
-  const BankSmsScreen({super.key, this.debits = false});
+  const BankSmsScreen({super.key, this.debits = true});
   final bool debits;
   @override
   ConsumerState<BankSmsScreen> createState() => _BankSmsScreenState();

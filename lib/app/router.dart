@@ -48,7 +48,7 @@ GoRouter buildRouter(Settings settings, Auth auth) {
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
       GoRoute(path: '/settings/recurring', builder: (_, _) => const RecurringScreen()),
       GoRoute(path: '/settings/cycle', builder: (_, _) => const CycleSettingsScreen()),
-      GoRoute(path: '/sms', builder: (_, s) => BankSmsScreen(debits: s.uri.queryParameters['tab'] == 'debits')),
+      GoRoute(path: '/sms', builder: (_, s) => BankSmsScreen(debits: s.uri.queryParameters['tab'] != 'credits')),
       GoRoute(path: '/big-picture', builder: (_, _) => const BigPictureScreen()),
       GoRoute(
         path: '/report/:start',
