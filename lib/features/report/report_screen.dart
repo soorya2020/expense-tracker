@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/money.dart';
+import '../../shared/motion.dart';
 import 'insights.dart';
 import 'pdf_report.dart';
 
@@ -17,9 +18,33 @@ class ReportScreen extends ConsumerStatefulWidget {
   ConsumerState<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState extends ConsumerState<ReportScreen> {
-  int i = 0;
+class _ReportScreenState extends ConsumerState<ReportScreen> with SingleTickerProviderStateMixin {
+  int i = 0, count = 1;
   bool busy = false;
+
+  /// Fills the current card's bar, then moves on by itself.
+  late final timer = AnimationController(vsync: this, duration: const Duration(seconds: 7))
+    ..addStatusListener((s) {
+      if (s == AnimationStatus.completed && i < count - 1) _go(i + 1);
+    });
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (timer.isDismissed && !timer.isAnimating) timer.forward();
+  }
+
+  @override
+  void dispose() {
+    timer.dispose();
+    super.dispose();
+  }
+
+  void _go(int to) {
+    if (to < 0 || to >= count) return;
+    setState(() => i = to);
+    timer.forward(from: 0);
+  }
 
   Future<void> _pdf(CycleView v, List<CycleView> older) async {
     setState(() => busy = true);
@@ -42,30 +67,29 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     final v = views[idx];
     final older = views.sublist(idx + 1);
     final cards = buildReport(v, older);
+    count = cards.length;
     final c = cards[i.clamp(0, cards.length - 1)];
     final bg = toneColor(c.tone);
     final last = i >= cards.length - 1;
     const white = Colors.white;
 
-    return Scaffold(
-      backgroundColor: bg,
-      body: SafeArea(
+    return TweenAnimationBuilder<Color?>(
+      tween: ColorTween(end: bg),
+      duration: motion(context, 350),
+      builder: (_, color, child) => Scaffold(backgroundColor: color, body: child),
+      child: SafeArea(
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapUp: (d) {
             final w = MediaQuery.of(context).size.width;
-            setState(() {
-              if (d.localPosition.dx < w / 3) {
-                if (i > 0) i--;
-              } else if (!last) {
-                i++;
-              }
-            });
+            _go(d.localPosition.dx < w / 3 ? i - 1 : i + 1);
           },
-          onHorizontalDragEnd: (d) => setState(() {
-            if ((d.primaryVelocity ?? 0) < 0 && !last) i++;
-            if ((d.primaryVelocity ?? 0) > 0 && i > 0) i--;
-          }),
+          onLongPressStart: (_) => timer.stop(),
+          onLongPressEnd: (_) => timer.forward(),
+          onHorizontalDragEnd: (d) {
+            if ((d.primaryVelocity ?? 0) < 0) _go(i + 1);
+            if ((d.primaryVelocity ?? 0) > 0) _go(i - 1);
+          },
           child: Padding(
             padding: const EdgeInsets.fromLTRB(22, 12, 22, 20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -75,9 +99,14 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                     child: Container(
                       height: 3,
                       margin: const EdgeInsets.symmetric(horizontal: 2),
-                      decoration: BoxDecoration(
-                        color: k <= i ? white : white.withValues(alpha: .35),
-                        borderRadius: BorderRadius.circular(2),
+                      decoration: BoxDecoration(color: white.withValues(alpha: .35), borderRadius: BorderRadius.circular(2)),
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedBuilder(
+                        animation: timer,
+                        builder: (_, _) => FractionallySizedBox(
+                          widthFactor: k < i ? 1 : (k == i ? (reduceMotion(context) || last ? 1 : timer.value) : 0),
+                          child: Container(decoration: BoxDecoration(color: white, borderRadius: BorderRadius.circular(2))),
+                        ),
                       ),
                     ),
                   ),
@@ -113,12 +142,18 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                 const SizedBox(height: 12),
               ],
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
+                duration: motion(context, 320),
+                switchInCurve: Curves.easeOutCubic,
+                layoutBuilder: (cur, prev) => Stack(alignment: Alignment.topLeft, children: [...prev, ?cur]),
+                transitionBuilder: (child, a) => FadeTransition(
+                  opacity: a,
+                  child: SlideTransition(position: Tween(begin: const Offset(.08, 0), end: Offset.zero).animate(a), child: child),
+                ),
                 child: Column(
                   key: ValueKey(i),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(c.headline, style: T.story.copyWith(color: white, fontSize: 40)),
+                    _CountHeadline(c.headline, style: T.story.copyWith(color: white, fontSize: 40)),
                     const SizedBox(height: 16),
                     Text(c.body, style: T.body.copyWith(color: white.withValues(alpha: .88), fontSize: 16, height: 1.45)),
                     const SizedBox(height: 22),
@@ -216,6 +251,25 @@ class _Trend extends StatelessWidget {
             ),
           ),
       ]),
+    );
+  }
+}
+
+/// The headline, with its first rupee amount counting up from zero.
+class _CountHeadline extends StatelessWidget {
+  const _CountHeadline(this.text, {required this.style});
+  final String text;
+  final TextStyle style;
+  @override
+  Widget build(BuildContext context) {
+    final m = RegExp(r'₹([\d,]+)').firstMatch(text);
+    final n = m == null ? null : int.tryParse(m.group(1)!.replaceAll(',', ''));
+    if (m == null || n == null || reduceMotion(context)) return Text(text, style: style);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: n.toDouble()),
+      duration: const Duration(milliseconds: 900),
+      curve: motionCurve,
+      builder: (_, v, _) => Text(text.replaceRange(m.start, m.end, rupees(v.round() * 100)), style: style),
     );
   }
 }

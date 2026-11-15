@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../shared/motion.dart';
+
 const _font = 'InterTight';
 
 /// The Big Number palette. Ink on white, one colour per kind of money.
@@ -113,6 +115,10 @@ ThemeData buildTheme(Brightness b) {
     fontFamily: _font,
     extensions: [p],
     splashFactory: InkSparkle.splashFactory,
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: SlideBackTransitionsBuilder(),
+      TargetPlatform.iOS: SlideBackTransitionsBuilder(),
+    }),
     appBarTheme: AppBarTheme(backgroundColor: p.bg, foregroundColor: p.ink, elevation: 0, scrolledUnderElevation: 0),
     dividerTheme: DividerThemeData(color: p.line, thickness: 1, space: 1),
     snackBarTheme: SnackBarThemeData(

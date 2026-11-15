@@ -70,6 +70,7 @@ Everything stays on your phone. There is no account and no server.
 - **4-digit PIN** with optional **fingerprint** unlock. The app locks again after a minute in the background.
 - **Check for updates** in Settings finds the newest build and downloads it. Updates install over the current version and keep your data.
 - **Spent per day** on Home: a bar for each day of the cycle (rent and bills kept apart), a dashed line for what you can still spend each day, an On track / Too fast chip, and how far you are through the cycle and your salary.
+- **Motion:** the balance and averages count up, the daily bars grow in, new entries slide into the list, screens slide in from the right, the report plays like a story, a wrong PIN shakes and buttons give a light tick when pressed. All of it switches off when the phone's "Remove animations" setting is on.
 - Light and dark themes, a two-colour ₹ app icon, Inter Tight type and controls placed in easy thumb reach.
 
 ---

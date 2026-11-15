@@ -26,6 +26,21 @@ GoRouter buildRouter(Settings settings, Auth auth) {
         ),
       );
 
+  // Unlocking, and opening a report: the new screen fades in and settles from slightly larger.
+  CustomTransitionPage<void> fadeScale(Widget child, GoRouterState s, {double from = 1.04}) => CustomTransitionPage(
+        key: s.pageKey,
+        child: child,
+        transitionDuration: const Duration(milliseconds: 380),
+        reverseTransitionDuration: const Duration(milliseconds: 260),
+        transitionsBuilder: (_, a, _, c) {
+          final t = CurvedAnimation(parent: a, curve: Curves.easeOutCubic);
+          return FadeTransition(
+            opacity: t,
+            child: ScaleTransition(scale: Tween(begin: from, end: 1.0).animate(t), child: c),
+          );
+        },
+      );
+
   return GoRouter(
     initialLocation: '/',
     refreshListenable: Listenable.merge([settings, auth]),
@@ -37,9 +52,9 @@ GoRouter buildRouter(Settings settings, Auth auth) {
       return null;
     },
     routes: [
-      GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+      GoRoute(path: '/', pageBuilder: (_, s) => fadeScale(const HomeScreen(), s, from: .97)),
       GoRoute(path: '/setup', builder: (_, _) => const SetupScreen()),
-      GoRoute(path: '/lock', builder: (_, _) => const LockScreen()),
+      GoRoute(path: '/lock', pageBuilder: (_, s) => fadeScale(const LockScreen(), s)),
       GoRoute(
         path: '/add',
         pageBuilder: (_, s) => slideUp(AddEntryScreen(args: s.extra as AddArgs? ?? const AddArgs()), s),
@@ -52,7 +67,7 @@ GoRouter buildRouter(Settings settings, Auth auth) {
       GoRoute(path: '/big-picture', builder: (_, _) => const BigPictureScreen()),
       GoRoute(
         path: '/report/:start',
-        pageBuilder: (_, s) => slideUp(ReportScreen(startMillis: int.parse(s.pathParameters['start']!)), s),
+        pageBuilder: (_, s) => fadeScale(ReportScreen(startMillis: int.parse(s.pathParameters['start']!)), s, from: .92),
       ),
     ],
   );

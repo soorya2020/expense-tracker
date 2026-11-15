@@ -174,6 +174,7 @@ void main() {
       await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 60)));
       await t.pump(const Duration(milliseconds: 100));
     }
+    await t.pump(const Duration(seconds: 2)); // let entrance animations finish
     await expectLater(find.byType(MaterialApp), matchesGoldenFile('$out/$name.png'));
     await t.pumpWidget(const SizedBox());
   }

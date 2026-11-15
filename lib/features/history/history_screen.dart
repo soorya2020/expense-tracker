@@ -61,12 +61,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         children.add(Dismissible(
           key: ValueKey('e${e.id}'),
           direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            color: p.overSoft,
-            child: Icon(Icons.delete_outline_rounded, color: p.over),
-          ),
+          background: const DeleteSwipeBackground(),
           onDismissed: (_) async {
             final messenger = ScaffoldMessenger.of(context);
             await repo.deleteEntry(e.id);

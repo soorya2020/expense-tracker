@@ -9,6 +9,7 @@ import '../../core/cycle_math.dart';
 import '../../core/money.dart';
 import '../../data/db.dart';
 import '../../data/repo.dart';
+import '../../shared/motion.dart';
 import '../../shared/widgets.dart';
 import 'after_save.dart';
 
@@ -147,13 +148,17 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (ctx) => Padding(
         padding: EdgeInsets.fromLTRB(22, 22, 22, 22 + MediaQuery.of(ctx).viewInsets.bottom),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: T.title.copyWith(color: p.ink)),
-          const SizedBox(height: 14),
-          TextField(controller: c, autofocus: true, textCapitalization: TextCapitalization.sentences, onSubmitted: (v) => Navigator.pop(ctx, v)),
-          const SizedBox(height: 14),
-          BigButton('Done', onTap: () => Navigator.pop(ctx, c.text)),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: T.title.copyWith(color: p.ink)),
+            const SizedBox(height: 14),
+            TextField(controller: c, autofocus: true, textCapitalization: TextCapitalization.sentences, onSubmitted: (v) => Navigator.pop(ctx, v)),
+            const SizedBox(height: 14),
+            BigButton('Done', onTap: () => Navigator.pop(ctx, c.text)),
+          ],
+        ),
       ),
     );
   }
@@ -168,33 +173,37 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     final edit = widget.args.edit;
     if (edit != null) {
       id = edit.id;
-      await repo.updateEntry(edit.copyWith(
-        kind: income ? EntryKind.income : EntryKind.spending,
-        amount: amount,
-        incomeKind: Value(income ? kind : null),
-        title: Value(t),
-        note: Value(n),
-        date: date,
-        endDate: Value(income ? null : endDate),
-        unexpected: !income && unexpected,
-        reason: Value(!income && unexpected ? reason : null),
-        yearly: !income && yearly,
-        helpedEntryId: Value(income && kind == IncomeKind.help ? helpedEntryId : null),
-      ));
+      await repo.updateEntry(
+        edit.copyWith(
+          kind: income ? EntryKind.income : EntryKind.spending,
+          amount: amount,
+          incomeKind: Value(income ? kind : null),
+          title: Value(t),
+          note: Value(n),
+          date: date,
+          endDate: Value(income ? null : endDate),
+          unexpected: !income && unexpected,
+          reason: Value(!income && unexpected ? reason : null),
+          yearly: !income && yearly,
+          helpedEntryId: Value(income && kind == IncomeKind.help ? helpedEntryId : null),
+        ),
+      );
     } else {
-      id = await repo.addEntry(EntriesCompanion.insert(
-        kind: income ? EntryKind.income : EntryKind.spending,
-        amount: amount,
-        incomeKind: Value(income ? kind : null),
-        title: Value(t),
-        note: Value(n),
-        date: date,
-        endDate: Value(income ? null : endDate),
-        unexpected: Value(!income && unexpected),
-        reason: Value(!income && unexpected ? reason : null),
-        yearly: Value(!income && yearly),
-        helpedEntryId: Value(income && kind == IncomeKind.help ? helpedEntryId : null),
-      ));
+      id = await repo.addEntry(
+        EntriesCompanion.insert(
+          kind: income ? EntryKind.income : EntryKind.spending,
+          amount: amount,
+          incomeKind: Value(income ? kind : null),
+          title: Value(t),
+          note: Value(n),
+          date: date,
+          endDate: Value(income ? null : endDate),
+          unexpected: Value(!income && unexpected),
+          reason: Value(!income && unexpected ? reason : null),
+          yearly: Value(!income && yearly),
+          helpedEntryId: Value(income && kind == IncomeKind.help ? helpedEntryId : null),
+        ),
+      );
     }
     await widget.args.onSaved?.call(id);
     if (!mounted) return;
@@ -214,10 +223,12 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
     await repo.deleteEntry(e.id);
     if (!mounted) return;
     context.pop();
-    messenger.showSnackBar(SnackBar(
-      content: Text('Deleted ${rupees(e.amount)}'),
-      action: SnackBarAction(label: 'Undo', onPressed: () => repo.restoreEntry(e)),
-    ));
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Deleted ${rupees(e.amount)}'),
+        action: SnackBarAction(label: 'Undo', onPressed: () => repo.restoreEntry(e)),
+      ),
+    );
   }
 
   @override
@@ -233,43 +244,81 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(14)),
-          child: Text('“${widget.args.sourceText}”', style: T.label.copyWith(color: p.ink, fontWeight: FontWeight.w500, height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
+          child: Text(
+            '“${widget.args.sourceText}”',
+            style: T.label.copyWith(color: p.ink, fontWeight: FontWeight.w500, height: 1.4),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       if (income) ...[
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final k in IncomeKind.all)
-            Pill(IncomeKind.label(k), selected: kind == k, color: p.forIncome(k) == p.muted ? p.ink : p.forIncome(k), onTap: () => setState(() => kind = k)),
-        ]),
-        Text(_kindHint(kind), style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500)),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final k in IncomeKind.all)
+              Pill(IncomeKind.label(k), selected: kind == k, color: p.forIncome(k) == p.muted ? p.ink : p.forIncome(k), onTap: () => setState(() => kind = k)),
+          ],
+        ),
+        Text(
+          _kindHint(kind),
+          style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+        ),
         if (kind == IncomeKind.help) ..._helpPicker(p),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          Pill(title == null || title!.isEmpty ? (kind == IncomeKind.salary ? '+ Label' : '+ Who from') : 'From $title', outlined: true,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Pill(
+              title == null || title!.isEmpty ? (kind == IncomeKind.salary ? '+ Label' : '+ Who from') : 'From $title',
+              outlined: true,
               onTap: () async {
-            final v = await _ask(kind == IncomeKind.salary ? 'Label' : 'Who is it from?', title);
-            if (v != null) setState(() => title = v);
-          }),
-          Pill(dateLabel(date), outlined: true, icon: Icons.calendar_today_rounded, onTap: _pickDate),
-          Pill(note == null || note!.isEmpty ? '+ Note' : note!, outlined: true, onTap: () async {
-            final v = await _ask('Note', note);
-            if (v != null) setState(() => note = v);
-          }),
-        ]),
+                final v = await _ask(kind == IncomeKind.salary ? 'Label' : 'Who is it from?', title);
+                if (v != null) setState(() => title = v);
+              },
+            ),
+            Pill(dateLabel(date), outlined: true, icon: Icons.calendar_today_rounded, onTap: _pickDate),
+            Pill(
+              note == null || note!.isEmpty ? '+ Note' : note!,
+              outlined: true,
+              onTap: () async {
+                final v = await _ask('Note', note);
+                if (v != null) setState(() => note = v);
+              },
+            ),
+          ],
+        ),
       ] else ...[
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          Pill('Today', selected: period == Period.today, onTap: () => _pickPeriod(Period.today)),
-          Pill('This week', selected: period == Period.week, onTap: () => _pickPeriod(Period.week)),
-          Pill('Since last entry', selected: period == Period.sinceLast, onTap: () => _pickPeriod(Period.sinceLast)),
-          Pill(period == Period.custom ? (endDate == null ? dateLabel(date) : rangeLabel(date, endDate!)) : 'Pick dates',
-              selected: period == Period.custom, icon: Icons.date_range_rounded, onTap: () => _pickPeriod(Period.custom)),
-        ]),
-        if (period != Period.custom && endDate != null)
-          Text('Covers ${rangeLabel(date, endDate!)}', style: T.label.copyWith(color: p.muted)),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          Pill(title == null || title!.isEmpty ? '+ Label' : title!, outlined: true, onTap: () async {
-            final v = await _ask('Label', title);
-            if (v != null) setState(() => title = v);
-          }),
-        ]),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Pill('Today', selected: period == Period.today, onTap: () => _pickPeriod(Period.today)),
+            Pill('This week', selected: period == Period.week, onTap: () => _pickPeriod(Period.week)),
+            Pill('Since last entry', selected: period == Period.sinceLast, onTap: () => _pickPeriod(Period.sinceLast)),
+            Pill(
+              period == Period.custom ? (endDate == null ? dateLabel(date) : rangeLabel(date, endDate!)) : 'Pick dates',
+              selected: period == Period.custom,
+              icon: Icons.date_range_rounded,
+              onTap: () => _pickPeriod(Period.custom),
+            ),
+          ],
+        ),
+        if (period != Period.custom && endDate != null) Text('Covers ${rangeLabel(date, endDate!)}', style: T.label.copyWith(color: p.muted)),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Pill(
+              title == null || title!.isEmpty ? '+ Label' : title!,
+              outlined: true,
+              onTap: () async {
+                final v = await _ask('Label', title);
+                if (v != null) setState(() => title = v);
+              },
+            ),
+          ],
+        ),
         _ToggleRow(
           title: 'Unexpected?',
           subtitle: 'Medical, vehicle, insurance… kept apart from normal spending',
@@ -281,10 +330,11 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           }),
         ),
         if (unexpected) ...[
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final r in Reasons.all)
-              Pill(Reasons.label(r), selected: reason == r, color: p.over, onTap: () => setState(() => reason = r)),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [for (final r in Reasons.all) Pill(Reasons.label(r), selected: reason == r, color: p.over, onTap: () => setState(() => reason = r))],
+          ),
           _ToggleRow(
             title: 'Comes back every year',
             subtitle: amount > 0 ? 'Set aside ${rupees(amount ~/ 12)} a cycle so next year is planned' : 'Tally will suggest a monthly set-aside',
@@ -299,40 +349,72 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(22, 8, 22, 16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Spacer(),
-              if (widget.args.edit != null)
-                IconButton(onPressed: _delete, icon: Icon(Icons.delete_outline_rounded, color: p.muted), tooltip: 'Delete'),
-              IconButton(onPressed: () => context.pop(), icon: Icon(Icons.close_rounded, color: p.muted), tooltip: 'Close'),
-            ]),
-            // Amount and options sit at the bottom, right above the keypad,
-            // so everything is in easy thumb reach.
-            Expanded(
-              child: SingleChildScrollView(
-                reverse: true,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text.rich(TextSpan(children: [
-                      TextSpan(text: digits.isEmpty ? '0' : rupees(amount, symbol: false), style: TextStyle(color: digits.isEmpty ? p.line : accent)),
-                      TextSpan(text: '|', style: TextStyle(color: p.line, fontWeight: FontWeight.w300)),
-                    ]), style: T.huge.copyWith(fontSize: 58)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Spacer(),
+                  if (widget.args.edit != null)
+                    IconButton(
+                      onPressed: _delete,
+                      icon: Icon(Icons.delete_outline_rounded, color: p.muted),
+                      tooltip: 'Delete',
+                    ),
+                  IconButton(
+                    onPressed: () => context.pop(),
+                    icon: Icon(Icons.close_rounded, color: p.muted),
+                    tooltip: 'Close',
                   ),
-                  const SizedBox(height: 12),
-                  for (final w in options) Padding(padding: const EdgeInsets.only(bottom: 12), child: w),
-                ]),
+                ],
               ),
-            ),
-            Keypad(onKey: (k) => setState(() => digits = applyKey(digits, k))),
-            const SizedBox(height: 10),
-            Row(children: [
-              _InOut(income: income, onChanged: (v) => setState(() => income = v)),
-              const Spacer(),
-              GoButton(onTap: amount > 0 ? _save : null, color: accent, icon: widget.args.edit != null ? Icons.check_rounded : Icons.arrow_forward_rounded),
-            ]),
-          ]),
+              // Amount and options sit at the bottom, right above the keypad,
+              // so everything is in easy thumb reach.
+              Expanded(
+                child: SingleChildScrollView(
+                  reverse: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      PopOnChange(
+                        value: digits,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: digits.isEmpty ? '0' : rupees(amount, symbol: false),
+                                  style: TextStyle(color: digits.isEmpty ? p.line : accent),
+                                ),
+                                TextSpan(
+                                  text: '|',
+                                  style: TextStyle(color: p.line, fontWeight: FontWeight.w300),
+                                ),
+                              ],
+                            ),
+                            style: T.huge.copyWith(fontSize: 58),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      for (final w in options) Padding(padding: const EdgeInsets.only(bottom: 12), child: w),
+                    ],
+                  ),
+                ),
+              ),
+              Keypad(onKey: (k) => setState(() => digits = applyKey(digits, k))),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  _InOut(income: income, onChanged: (v) => setState(() => income = v)),
+                  const Spacer(),
+                  GoButton(onTap: amount > 0 ? _save : null, color: accent, icon: widget.args.edit != null ? Icons.check_rounded : Icons.arrow_forward_rounded),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -340,9 +422,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
 
   List<Widget> _helpPicker(Palette p) {
     final cutoff = DateTime.now().subtract(const Duration(days: 60));
-    final spends = (ref.watch(entriesProvider).value ?? const [])
-        .where((e) => !isIncome(e) && effectiveDate(e).isAfter(cutoff))
-        .toList()
+    final spends = (ref.watch(entriesProvider).value ?? const []).where((e) => !isIncome(e) && effectiveDate(e).isAfter(cutoff)).toList()
       ..sort((a, b) {
         if (a.unexpected != b.unexpected) return a.unexpected ? -1 : 1;
         return effectiveDate(b).compareTo(effectiveDate(a));
@@ -355,33 +435,43 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           onTap: () => setState(() => helpedEntryId = helpedEntryId == e.id ? null : e.id),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: p.line))),
-            child: Row(children: [
-              Icon(helpedEntryId == e.id ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                  color: helpedEntryId == e.id ? p.help : p.line, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(e.title ?? 'Spending', style: T.body.copyWith(color: p.ink)),
-                  Text(
-                    '${e.unexpected ? 'Unexpected · ' : ''}${e.endDate != null ? rangeLabel(e.date, e.endDate!) : shortDate(e.date)}',
-                    style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: p.line)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  helpedEntryId == e.id ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  color: helpedEntryId == e.id ? p.help : p.line,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(e.title ?? 'Spending', style: T.body.copyWith(color: p.ink)),
+                      Text(
+                        '${e.unexpected ? 'Unexpected · ' : ''}${e.endDate != null ? rangeLabel(e.date, e.endDate!) : shortDate(e.date)}',
+                        style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
-                ]),
-              ),
-              Text(rupees(e.amount, symbol: false), style: T.bodyBold.copyWith(color: p.ink)),
-            ]),
+                ),
+                Text(rupees(e.amount, symbol: false), style: T.bodyBold.copyWith(color: p.ink)),
+              ],
+            ),
           ),
         ),
     ];
   }
 
   String _kindHint(String k) => switch (k) {
-        IncomeKind.salary => 'Your regular pay.',
-        IncomeKind.extra => 'Pocket money, gifts, refunds, side work.',
-        IncomeKind.help => 'Someone helped you through a tough month. Not paid back.',
-        _ => 'Money you’ll pay back. It stays on a “to repay” list.',
-      };
+    IncomeKind.salary => 'Your regular pay.',
+    IncomeKind.extra => 'Pocket money, gifts, refunds, side work.',
+    IncomeKind.help => 'Someone helped you through a tough month. Not paid back.',
+    _ => 'Money you’ll pay back. It stays on a “to repay” list.',
+  };
 }
 
 /// In / Out switch that sits next to the save button.
@@ -393,18 +483,18 @@ class _InOut extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.p;
     Widget seg(String label, bool on, bool value) => GestureDetector(
-          onTap: () => onChanged(value),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-            decoration: BoxDecoration(
-              color: on ? p.bg : Colors.transparent,
-              borderRadius: BorderRadius.circular(99),
-              boxShadow: on ? const [BoxShadow(color: Color(0x22000000), blurRadius: 4, offset: Offset(0, 1))] : null,
-            ),
-            child: Text(label, style: T.bodyBold.copyWith(fontSize: 16, color: on ? p.ink : p.muted)),
-          ),
-        );
+      onTap: () => onChanged(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+        decoration: BoxDecoration(
+          color: on ? p.bg : Colors.transparent,
+          borderRadius: BorderRadius.circular(99),
+          boxShadow: on ? const [BoxShadow(color: Color(0x22000000), blurRadius: 4, offset: Offset(0, 1))] : null,
+        ),
+        child: Text(label, style: T.bodyBold.copyWith(fontSize: 16, color: on ? p.ink : p.muted)),
+      ),
+    );
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(99)),
@@ -422,18 +512,26 @@ class _ToggleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.p;
-    return Row(children: [
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: T.body.copyWith(color: p.ink, fontSize: 15)),
-          Text(subtitle, style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500)),
-        ]),
-      ),
-      Switch(
-        value: value,
-        onChanged: onChanged,
-        trackColor: color == null ? null : WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? color : p.line),
-      ),
-    ]);
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: T.body.copyWith(color: p.ink, fontSize: 15)),
+              Text(
+                subtitle,
+                style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          trackColor: color == null ? null : WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? color : p.line),
+        ),
+      ],
+    );
   }
 }

@@ -5,6 +5,7 @@ import '../app/theme.dart';
 import '../core/money.dart';
 import '../data/db.dart';
 import '../data/repo.dart';
+import 'motion.dart';
 
 /// Number pad used for amounts and PINs.
 class Keypad extends StatelessWidget {
@@ -20,22 +21,30 @@ class Keypad extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.p;
     Widget key(String k, {Widget? child}) => Expanded(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onKey(k);
-            },
-            onLongPress: k == 'del' ? () => onKey('clear') : null,
-            child: SizedBox(
-              height: 58,
-              child: Center(
-                child: child ??
-                    Text(k, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w500, color: p.ink)),
-              ),
+      child: Pressable(
+        haptic: false,
+        scale: .9,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onKey(k);
+          },
+          onLongPress: k == 'del' ? () => onKey('clear') : null,
+          child: SizedBox(
+            height: 58,
+            child: Center(
+              child:
+                  child ??
+                  Text(
+                    k,
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w500, color: p.ink),
+                  ),
             ),
           ),
-        );
+        ),
+      ),
+    );
     Widget row(List<Widget> c) => Row(children: c);
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -47,9 +56,14 @@ class Keypad extends StatelessWidget {
         row([key('7'), key('8'), key('9')]),
         SizedBox(height: rowGap),
         row([
-          if (leftKey != null) Expanded(child: SizedBox(height: 58, child: Center(child: leftKey)))
-          else if (showDoubleZero) key('00')
-          else const Expanded(child: SizedBox()),
+          if (leftKey != null)
+            Expanded(
+              child: SizedBox(height: 58, child: Center(child: leftKey)),
+            )
+          else if (showDoubleZero)
+            key('00')
+          else
+            const Expanded(child: SizedBox()),
           key('0'),
           key('del', child: Icon(Icons.backspace_outlined, color: p.ink, size: 22)),
         ]),
@@ -82,18 +96,30 @@ class Pill extends StatelessWidget {
     final c = color ?? p.ink;
     final bg = selected ? c : (outlined ? Colors.transparent : p.surface);
     final fg = selected ? (color == null ? p.bg : (c == p.extra ? const Color(0xFF1A1205) : Colors.white)) : p.ink;
-    return Material(
-      color: bg,
-      shape: StadiumBorder(side: outlined && !selected ? BorderSide(color: p.line) : BorderSide.none),
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (icon != null) ...[Icon(icon, size: 15, color: fg), const SizedBox(width: 6)],
-            Text(label, style: T.label.copyWith(color: fg, fontSize: 13)),
-          ]),
+    return Pressable(
+      enabled: onTap != null,
+      child: AnimatedContainer(
+        duration: motion(context, 180),
+        decoration: ShapeDecoration(
+          color: bg,
+          shape: StadiumBorder(side: outlined && !selected ? BorderSide(color: p.line) : BorderSide.none),
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[Icon(icon, size: 15, color: fg), const SizedBox(width: 6)],
+                  Text(label, style: T.label.copyWith(color: fg, fontSize: 13)),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -111,18 +137,23 @@ class GoButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.p;
     final c = color ?? p.salary;
-    return Material(
-      color: onTap == null ? p.line : c,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap == null
-            ? null
-            : () {
-                HapticFeedback.mediumImpact();
-                onTap!();
-              },
-        child: SizedBox(width: 64, height: 64, child: Icon(icon, color: c == p.ink ? p.bg : Colors.white, size: 28)),
+    return Pressable(
+      enabled: onTap != null,
+      haptic: false,
+      scale: .9,
+      child: Material(
+        color: onTap == null ? p.line : c,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap == null
+              ? null
+              : () {
+                  HapticFeedback.mediumImpact();
+                  onTap!();
+                },
+          child: SizedBox(width: 64, height: 64, child: Icon(icon, color: c == p.ink ? p.bg : Colors.white, size: 28)),
+        ),
       ),
     );
   }
@@ -141,22 +172,48 @@ class BigButton extends StatelessWidget {
     final p = context.p;
     final bg = filled ? (color ?? p.ink) : p.surface;
     final fg = filled ? (color == null ? p.bg : Colors.white) : p.ink;
-    return SizedBox(
-      width: double.infinity,
-      child: Material(
-        color: bg,
-        shape: const StadiumBorder(),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 17),
-            child: Center(heightFactor: 1, child: Text(label, style: T.bodyBold.copyWith(color: fg, fontSize: 15))),
+    return Pressable(
+      enabled: onTap != null,
+      scale: .97,
+      child: SizedBox(
+        width: double.infinity,
+        child: Material(
+          color: bg,
+          shape: const StadiumBorder(),
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 17),
+              child: Center(
+                heightFactor: 1,
+                child: Text(label, style: T.bodyBold.copyWith(color: fg, fontSize: 15)),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Shown behind a row while it is swiped away.
+class DeleteSwipeBackground extends StatelessWidget {
+  const DeleteSwipeBackground({super.key});
+  @override
+  Widget build(BuildContext context) => Container(
+    alignment: Alignment.centerRight,
+    padding: const EdgeInsets.only(right: 16),
+    color: context.p.over,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+        const SizedBox(width: 6),
+        Text('Delete', style: T.bodyBold.copyWith(color: Colors.white, fontSize: 13)),
+      ],
+    ),
+  );
 }
 
 class CapsLabel extends StatelessWidget {
@@ -181,19 +238,29 @@ class LineRow extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: p.line))),
-        child: Row(children: [
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: T.body.copyWith(color: p.ink, fontSize: 15)),
-              if (subtitle != null) ...[
-                const SizedBox(height: 2),
-                Text(subtitle!, style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500)),
-              ],
-            ]),
-          ),
-          if (trailing != null) trailing!,
-        ]),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: p.line)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: T.body.copyWith(color: p.ink, fontSize: 15)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) trailing!,
+          ],
+        ),
       ),
     );
   }
@@ -203,8 +270,7 @@ class TrailingText extends StatelessWidget {
   const TrailingText(this.text, {super.key});
   final String text;
   @override
-  Widget build(BuildContext context) =>
-      Text('$text  ›', style: T.body.copyWith(color: context.p.muted, fontSize: 13));
+  Widget build(BuildContext context) => Text('$text  ›', style: T.body.copyWith(color: context.p.muted, fontSize: 13));
 }
 
 /// One entry in a list: name and kind on the left, signed amount on the right.
@@ -223,31 +289,45 @@ class EntryRow extends StatelessWidget {
     final sub = inc
         ? IncomeKind.label(e.incomeKind ?? '')
         : e.endDate != null
-            ? rangeLabel(e.date, e.endDate!)
-            : shortDate(e.date);
+        ? rangeLabel(e.date, e.endDate!)
+        : shortDate(e.date);
     final color = inc ? p.forIncome(e.incomeKind) : (e.unexpected ? p.over : p.ink);
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13),
-        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: p.line))),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-          Expanded(
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: name, style: T.body.copyWith(color: p.ink, fontSize: 15)),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: p.line)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Expanded(
+              child: Text.rich(
                 TextSpan(
-                  text: '   ${e.unexpected ? '$sub · Unexpected' : sub}',
-                  style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+                  children: [
+                    TextSpan(
+                      text: name,
+                      style: T.body.copyWith(color: p.ink, fontSize: 15),
+                    ),
+                    TextSpan(
+                      text: '   ${e.unexpected ? '$sub · Unexpected' : sub}',
+                      style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
+                    ),
+                  ],
                 ),
-              ]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(signed(e.amount, positive: inc), style: T.bodyBold.copyWith(color: color, fontSize: 15)),
-        ]),
+            const SizedBox(width: 8),
+            Text(
+              signed(e.amount, positive: inc),
+              style: T.bodyBold.copyWith(color: color, fontSize: 15),
+            ),
+          ],
+        ),
       ),
     );
   }

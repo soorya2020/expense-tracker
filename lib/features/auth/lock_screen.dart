@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../app/theme.dart';
+import '../../shared/motion.dart';
 import '../../shared/widgets.dart';
 import 'secret_entry.dart';
 
@@ -16,6 +17,7 @@ class LockScreen extends ConsumerStatefulWidget {
 class _LockScreenState extends ConsumerState<LockScreen> {
   String pin = '';
   bool wrong = false;
+  int misses = 0;
   bool canBio = false;
 
   @override
@@ -42,6 +44,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
       HapticFeedback.heavyImpact();
       setState(() {
         wrong = true;
+        misses++;
         pin = '';
       });
     }
@@ -71,7 +74,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
             ),
             const SizedBox(height: 32),
             ...[
-              PinDots(filled: pin.length, error: wrong),
+              Shake(trigger: misses, child: PinDots(filled: pin.length, error: wrong)),
               const Spacer(),
               Keypad(
                 onKey: _key,
