@@ -41,6 +41,16 @@ void main() {
     ], s, e, DateTime(2026, 11, 5));
     expect(over.pace, Pace.pastSalary);
     expect(DailySpend.of(const [], s, e, DateTime(2026, 11, 5)).pace, Pace.noSalary);
-    expect(DailySpend.of(const [], s, e, DateTime(2026, 11, 5), usualSalary: 100).pace, Pace.onTrack);
+      });
+
+  test('extra income and a remembered salary do not count as this cycle\'s salary', () {
+    final d = DailySpend.of([
+      _e(1, EntryKind.income, 5000, s, incomeKind: IncomeKind.extra),
+      _e(2, EntryKind.spending, 2485, DateTime(2026, 11, 10)),
+    ], s, e, DateTime(2026, 11, 16));
+    expect(d.salary, 0);
+    expect(d.salaryUsed, 0);
+    expect(d.pace, Pace.noSalary);
+    expect(d.perDayLeft, 0);
   });
 }

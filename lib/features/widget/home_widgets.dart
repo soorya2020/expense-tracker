@@ -14,7 +14,7 @@ String? _last;
 /// Sends today's numbers to the home screen widgets. Cheap to call often:
 /// nothing is sent when the numbers haven't changed.
 Future<void> pushWidgetData(Settings s, CycleView cur, int balance) async {
-  final d = DailySpend.of(cur.entries, cur.start, cur.end, DateTime.now(), usualSalary: s.usualSalary);
+  final d = DailySpend.of(cur.entries, cur.start, cur.end, DateTime.now());
   final hide = s.widgetHide;
   String money(int paise) => hide ? '₹ ••••' : rupees(paise);
   final safe = d.perDayLeft;
