@@ -152,7 +152,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         RiseIn(
                           delay: 100,
                           child: DailyCard(
-                            d: DailySpend.of(v.entries, v.start, v.end, DateTime.now(), usualSalary: ref.watch(settingsProvider).usualSalary),
+                            d: DailySpend.of(v.entries, v.start, v.end, DateTime.now()),
                             start: v.start,
                             end: v.end,
                           ),

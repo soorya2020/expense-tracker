@@ -15,7 +15,7 @@ enum Pace { onTrack, bitFast, tooFast, pastSalary, noSalary }
 class DailySpend {
   DailySpend._(this.length, this.dayNumber, this.daily, this.fixed, this.fixedLabel, this.salary, this.spent);
 
-  factory DailySpend.of(List<Entry> entries, DateTime start, DateTime end, DateTime today, {int usualSalary = 0}) {
+  factory DailySpend.of(List<Entry> entries, DateTime start, DateTime end, DateTime today) {
     final s = dateOnly(start), e = dateOnly(end);
     final length = daysBetweenInclusive(s, e);
     final dayNumber = daysBetweenInclusive(s, dateOnly(today)).clamp(1, length);
@@ -43,14 +43,16 @@ class DailySpend {
         }
       }
     }
-    return DailySpend._(length, dayNumber, daily, fixed, label, salary > 0 ? salary : usualSalary, spent);
+    return DailySpend._(length, dayNumber, daily, fixed, label, salary, spent);
   }
 
   final int length, dayNumber;
   final List<double> daily, fixed;
   final List<String?> fixedLabel;
 
-  /// This cycle's salary, or the usual one if it hasn't arrived yet.
+  /// Salary logged in this cycle. Zero until it is logged: the usual salary is
+  /// only a guess, and using it here made "salary used" show a percentage of a
+  /// salary the person hadn't added.
   final int salary;
   final int spent;
 
