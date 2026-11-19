@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_budgets_description">Your category budgets and what you can safely spend today</string>
+    <string name="widget_budgets_empty">Set a budget in Tally and it shows up here. Tap to open.</string>
+</resources>

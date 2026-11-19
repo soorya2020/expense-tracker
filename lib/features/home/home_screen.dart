@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/money.dart';
+import '../../data/categories.dart';
 import '../../data/daily.dart';
 import '../../data/db.dart';
 import '../../data/repo.dart';
@@ -14,6 +15,9 @@ import '../../shared/widgets.dart';
 import '../entry/add_entry_screen.dart';
 import '../report/insights.dart';
 import '../sms/bank_sms_screen.dart';
+import '../settings/budgets_screen.dart';
+import '../widget/home_widgets.dart';
+import 'budget_cards.dart';
 import 'daily_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -53,6 +57,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       known.addAll(v.entries.map((e) => e.id));
       seeded = true;
+      if (v.isCurrent) {
+        checkBudgetAlerts(ref.read(settingsProvider), v);
+        pushWidgetData(ref.read(settingsProvider), v, bal);
+      }
     });
 
     return Scaffold(
@@ -140,15 +148,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                       if (v.isCurrent) ...[
-                        if (s.overSalary > 0) const SizedBox(height: 14),
+                        BudgetNudge(v: v),
+                        const SizedBox(height: 14),
                         RiseIn(
                           delay: 100,
                           child: DailyCard(
-                            d: DailySpend.of(v.entries, v.start, v.end, DateTime.now(), usualSalary: ref.watch(settingsProvider).usualSalary),
+                            d: DailySpend.of(v.entries, v.start, v.end, DateTime.now(), rules: catRules(ref.watch(settingsProvider))),
                             start: v.start,
                             end: v.end,
                           ),
                         ),
+                        RiseIn(delay: 150, child: WhereItWent(v: v)),
                         ..._extras(context, ref),
                       ],
                       const SizedBox(height: 16),

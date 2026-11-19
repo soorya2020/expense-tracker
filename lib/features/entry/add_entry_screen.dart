@@ -7,15 +7,17 @@ import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/cycle_math.dart';
 import '../../core/money.dart';
+import '../../data/categories.dart';
 import '../../data/db.dart';
 import '../../data/repo.dart';
+import '../../shared/cat_widgets.dart';
 import '../../shared/motion.dart';
 import '../../shared/widgets.dart';
 import 'after_save.dart';
 
 /// What the add screen opens with.
 class AddArgs {
-  const AddArgs({this.income = true, this.edit, this.amount, this.date, this.endDate, this.title, this.sourceText, this.onSaved, this.kind});
+  const AddArgs({this.income = true, this.edit, this.amount, this.date, this.endDate, this.title, this.sourceText, this.onSaved, this.kind, this.tag, this.merchant});
   final bool income;
   final String? kind;
   final Entry? edit;
@@ -24,6 +26,8 @@ class AddArgs {
   final DateTime? endDate; // for a range, e.g. several debits added as one
   final String? title;
   final String? sourceText; // original SMS shown on top
+  final String? tag; // category to start with
+  final String? merchant; // payee from an SMS, for "Always tag … as …"
   final Future<void> Function(int entryId)? onSaved;
 }
 
@@ -51,6 +55,9 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   int? helpedEntryId;
   DateTime? lastSpendEnd;
   bool saving = false;
+  String? tag; // spending category
+  bool alwaysTag = false;
+  late final String? firstTag = tag;
 
   @override
   void initState() {
@@ -71,7 +78,9 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       reason = e.reason;
       yearly = e.yearly;
       helpedEntryId = e.helpedEntryId;
+      tag = e.tag;
     } else {
+      tag = a.tag;
       if (a.amount != null) digits = (a.amount! ~/ 100).toString();
       if (a.date != null) date = dateOnly(a.date!);
       if (a.endDate != null && dateOnly(a.endDate!) != date) {
@@ -186,6 +195,7 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           reason: Value(!income && unexpected ? reason : null),
           yearly: !income && yearly,
           helpedEntryId: Value(income && kind == IncomeKind.help ? helpedEntryId : null),
+          tag: Value(income ? null : tag),
         ),
       );
     } else {
@@ -202,9 +212,11 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           reason: Value(!income && unexpected ? reason : null),
           yearly: Value(!income && yearly),
           helpedEntryId: Value(income && kind == IncomeKind.help ? helpedEntryId : null),
+          tag: Value(income ? null : tag),
         ),
       );
     }
+    if (!income && alwaysTag && tag != null) await learnCat(ref.read(settingsProvider), widget.args.merchant, tag!);
     await widget.args.onSaved?.call(id);
     if (!mounted) return;
     final label = income ? IncomeKind.label(kind) : (unexpected ? 'Unexpected spending' : 'Spending');
@@ -227,6 +239,35 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
       SnackBar(
         content: Text('Deleted ${rupees(e.amount)}'),
         action: SnackBarAction(label: 'Undo', onPressed: () => repo.restoreEntry(e)),
+      ),
+    );
+  }
+
+  /// Category pills in one scrolling line, so the keypad stays in reach.
+  Widget _catRow(Palette p) {
+    final s = ref.watch(settingsProvider);
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        children: [
+          Center(child: Text('Category  ', style: T.label.copyWith(color: p.muted))),
+          // The category it opened with goes first, so it's visible without scrolling.
+          for (final c in [...allCats(s).where((c) => c.id == firstTag), ...allCats(s).where((c) => c.id != firstTag)])
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(
+                child: Pill(c.label, dot: c.color, color: c.color, selected: tag == c.id, onTap: () => setState(() => tag = tag == c.id ? null : c.id)),
+              ),
+            ),
+          Center(
+            child: Pill('+ New', outlined: true, onTap: () async {
+              final id = await newCatDialog(context, s);
+              if (id != null) setState(() => tag = id);
+            }),
+          ),
+        ],
       ),
     );
   }
@@ -305,6 +346,14 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
           ],
         ),
         if (period != Period.custom && endDate != null) Text('Covers ${rangeLabel(date, endDate!)}', style: T.label.copyWith(color: p.muted)),
+        _catRow(p),
+        if (widget.args.merchant != null && tag != null && tag != widget.args.tag)
+          _ToggleRow(
+            title: 'Always tag ${widget.args.merchant} as ${catById(ref.read(settingsProvider), tag)?.label ?? ''}',
+            subtitle: 'Tally will tag their messages for you next time',
+            value: alwaysTag,
+            onChanged: (v) => setState(() => alwaysTag = v),
+          ),
         Wrap(
           spacing: 8,
           runSpacing: 8,

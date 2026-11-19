@@ -30,6 +30,11 @@ class Settings extends ChangeNotifier {
     return v == null ? null : DateTime.fromMillisecondsSinceEpoch(v);
   }
   bool get backupReminder => _p.getBool('backupReminder') ?? false;
+  String get catRulesJson => _p.getString('catRules') ?? '{}';
+  String get customCatsJson => _p.getString('customCats') ?? '[]';
+  String get budgetsJson => _p.getString('budgets') ?? '{}';
+  List<String> get budgetFlags => _p.getStringList('budgetFlags') ?? const []; // alerts already shown
+  bool get widgetHide => _p.getBool('widgetHide') ?? false;
   ThemeMode get themeMode => switch (_p.getString('theme')) {
         'light' => ThemeMode.light,
         'dark' => ThemeMode.dark,
@@ -87,6 +92,12 @@ class Settings extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  Future<void> setCatRulesJson(String v) => _set(_p.setString('catRules', v));
+  Future<void> setCustomCatsJson(String v) => _set(_p.setString('customCats', v));
+  Future<void> setBudgetsJson(String v) => _set(_p.setString('budgets', v));
+  Future<void> addBudgetFlag(String v) => _set(_p.setStringList('budgetFlags', {...budgetFlags, v}.toList()));
+  Future<void> setWidgetHide(bool v) => _set(_p.setBool('widgetHide', v));
 
   Future<void> setThemeMode(ThemeMode m) => _set(_p.setString('theme', m.name));
 }

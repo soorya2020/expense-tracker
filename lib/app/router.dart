@@ -12,6 +12,7 @@ import '../features/report/report_screen.dart';
 import '../features/report/big_picture_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/settings/budgets_screen.dart';
 import '../features/settings/recurring_screen.dart';
 import '../features/sms/bank_sms_screen.dart';
 
@@ -62,6 +63,7 @@ GoRouter buildRouter(Settings settings, Auth auth) {
       GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
       GoRoute(path: '/settings/recurring', builder: (_, _) => const RecurringScreen()),
+      GoRoute(path: '/settings/budgets', builder: (_, _) => const BudgetsScreen()),
       GoRoute(path: '/settings/cycle', builder: (_, _) => const CycleSettingsScreen()),
       GoRoute(path: '/sms', builder: (_, s) => BankSmsScreen(debits: s.uri.queryParameters['tab'] != 'credits')),
       GoRoute(path: '/big-picture', builder: (_, _) => const BigPictureScreen()),

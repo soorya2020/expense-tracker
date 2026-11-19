@@ -7,7 +7,9 @@ import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/cycle_math.dart';
 import '../../core/money.dart';
+import '../../data/categories.dart';
 import '../../data/db.dart';
+import '../../shared/cat_widgets.dart';
 import '../../shared/widgets.dart';
 import '../entry/add_entry_screen.dart';
 import 'sms_service.dart';
@@ -29,6 +31,8 @@ void addFromSms(BuildContext context, WidgetRef ref, BankMessage m) {
       amount: m.amount,
       date: m.receivedAt,
       title: m.counterparty,
+      merchant: credit ? null : m.counterparty,
+      tag: credit ? null : smsCat(m, catRules(ref.read(settingsProvider))).id,
       kind: looksLikeSalary ? IncomeKind.salary : null,
       sourceText: m.rawText,
       onSaved: (id) => repo.setSmsStatus([m.id], 'added', entryId: id),
@@ -91,6 +95,8 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
     if (sel.isEmpty) return;
     final repo = ref.read(repoProvider);
     final ids = sel.map((m) => m.id).toList();
+    final rules = catRules(ref.read(settingsProvider));
+    final tags = sel.map((m) => smsCat(m, rules).id).toSet();
     context.push(
       '/add',
       extra: AddArgs(
@@ -99,10 +105,28 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
         date: sel.first.receivedAt,
         endDate: sel.last.receivedAt,
         sourceText: '${sel.length} bank debits added as one',
+        tag: tags.length == 1 ? tags.first : null,
         onSaved: (id) => repo.setSmsStatus(ids, 'added', entryId: id),
       ),
     );
     setState(picked.clear);
+  }
+
+  Future<void> _tag(BankMessage m) async {
+    final s = ref.read(settingsProvider), repo = ref.read(repoProvider);
+    final cur = smsCat(m, catRules(s));
+    final r = await pickCat(
+      context,
+      s,
+      title: '${rupees(m.amount)} to ${m.counterparty ?? 'someone'}',
+      subtitle: [DateFormat('EEE d MMM, h:mm a').format(m.receivedAt), m.account].whereType<String>().join(' · '),
+      selected: cur.id,
+      merchant: m.counterparty,
+    );
+    if (r == null) return;
+    await repo.setSmsTag(m.id, r.id);
+    if (m.entryId != null) await repo.setEntryTag(m.entryId!, r.id);
+    if (r.always && r.id != null) await learnCat(s, m.counterparty, r.id!);
   }
 
   Future<void> _more(BankMessage m) async {
@@ -171,6 +195,9 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
     final intro = allowed == false && !ref.watch(settingsProvider).smsEnabled && all.isEmpty;
     final pickedTotal = all.where((m) => picked.contains(m.id)).fold<int>(0, (a, m) => a + m.amount);
     final day = DateFormat('EEE d MMM');
+    final settings = ref.watch(settingsProvider);
+    final rules = catRules(settings);
+    final autoCount = debits ? list.where((m) => m.status == 'new' && smsCat(m, rules).auto).length : 0;
     final time = DateFormat('h:mm a');
 
     final rows = <Widget>[];
@@ -189,6 +216,9 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
       rows.add(
         _SmsRow(
           m: m,
+          cat: m.direction == 'debit' ? catById(settings, smsCat(m, rules).id) : null,
+          auto: smsCat(m, rules).auto,
+          onTag: m.direction == 'debit' && !selecting ? () => _tag(m) : null,
           selected: picked.contains(m.id),
           onTap: () {
             if (selecting && debits && m.status == 'new') {
@@ -242,6 +272,10 @@ class _BankSmsScreenState extends ConsumerState<BankSmsScreen> {
                         : '${newOnes.length} new · ${rupees(newOnes.fold<int>(0, (a, m) => a + m.amount))}',
                     style: T.sentence.copyWith(color: p.ink),
                   ),
+                  if (debits && autoCount > 0) ...[
+                    const SizedBox(height: 4),
+                    Text('Tally tagged $autoCount for you. Tap a tag to change it.', style: T.label.copyWith(color: p.muted)),
+                  ],
                   if (debits && newOnes.length > 1 && !selecting) ...[
                     const SizedBox(height: 4),
                     Text('Long-press to pick several and add them as one spending.', style: T.label.copyWith(color: p.muted)),
@@ -329,8 +363,14 @@ class _SmsRow extends StatelessWidget {
     required this.onLongPress,
     required this.onMore,
     required this.time,
+    this.cat,
+    this.auto = false,
+    this.onTag,
   });
   final BankMessage m;
+  final Cat? cat;
+  final bool auto;
+  final VoidCallback? onTag;
   final bool selected;
   final VoidCallback onTap, onLongPress, onMore;
   final String time;
@@ -341,7 +381,8 @@ class _SmsRow extends StatelessWidget {
     final credit = m.direction == 'credit';
     final done = m.status != 'new';
     final color = done ? p.muted : (credit ? p.salary : p.ink);
-    final sub = [m.account, time, if (m.status == 'added') 'Added', if (m.status == 'skipped') 'Skipped'].whereType<String>().join(' · ');
+    final debit = !credit;
+    final sub = [if (!debit) m.account, time, if (m.status == 'added') 'Added', if (m.status == 'skipped') 'Skipped'].whereType<String>().join(' · ');
     return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -353,7 +394,8 @@ class _SmsRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (selected) ...[Icon(Icons.check_circle_rounded, color: p.salary, size: 20), const SizedBox(width: 10)],
+            if (selected) ...[Icon(Icons.check_circle_rounded, color: p.salary, size: 20), const SizedBox(width: 10)]
+            else if (debit) ...[CatTile(cat, faded: done), const SizedBox(width: 12)],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,11 +410,13 @@ class _SmsRow extends StatelessWidget {
                       decoration: m.status == 'skipped' ? TextDecoration.lineThrough : null,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    sub,
-                    style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500),
-                  ),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    if (debit && m.status != 'skipped') ...[CatTag(cat, auto: auto, onTap: onTag), const SizedBox(width: 6)],
+                    Flexible(
+                      child: Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: T.label.copyWith(color: p.muted, fontWeight: FontWeight.w500)),
+                    ),
+                  ]),
                 ],
               ),
             ),

@@ -24,6 +24,7 @@ import 'package:tally/features/history/history_screen.dart';
 import 'package:tally/features/home/home_screen.dart';
 import 'package:tally/features/report/big_picture_screen.dart';
 import 'package:tally/features/report/report_screen.dart';
+import 'package:tally/features/settings/budgets_screen.dart';
 import 'package:tally/features/settings/recurring_screen.dart';
 import 'package:tally/features/settings/settings_screen.dart';
 import 'package:tally/features/sms/bank_sms_screen.dart';
@@ -65,6 +66,7 @@ void main() {
       'smsEnabled': true,
       'smsLastScan': now.millisecondsSinceEpoch,
       'lastBackup': now.subtract(const Duration(days: 2)).millisecondsSinceEpoch,
+      'budgets': '{"food":300000,"groceries":400000,"travel":200000}',
     });
     settings = await Settings.load();
     db = AppDb(NativeDatabase.memory());
@@ -72,7 +74,7 @@ void main() {
 
     Future<int> inc(int r, String k, String? t, DateTime d) => repo.addEntry(
         EntriesCompanion.insert(kind: EntryKind.income, amount: r * 100, incomeKind: Value(k), title: Value(t), date: d));
-    Future<int> spend(int r, String? t, DateTime d, {DateTime? to, bool unexpected = false, String? reason, bool yearly = false}) =>
+    Future<int> spend(int r, String? t, DateTime d, {DateTime? to, bool unexpected = false, String? reason, bool yearly = false, String? tag}) =>
         repo.addEntry(EntriesCompanion.insert(
             kind: EntryKind.spending,
             amount: r * 100,
@@ -81,7 +83,8 @@ void main() {
             endDate: Value(to),
             unexpected: Value(unexpected),
             reason: Value(reason),
-            yearly: Value(yearly)));
+            yearly: Value(yearly),
+            tag: Value(tag)));
 
     // Six finished cycles, then this one.
     final spent = [29500, 31800, 31000, 30100, 33200, 31200];
@@ -107,9 +110,11 @@ void main() {
     await db.into(db.cycles).insert(CyclesCompanion.insert(startDate: start, endDate: DateTime(start.year, start.month + 1, 2)));
     await inc(30000, IncomeKind.salary, 'Salary', start);
     await spend(9000, 'Rent', start);
-    await spend(3900, null, start.add(const Duration(days: 1)), to: start.add(const Duration(days: 6)));
+    await spend(1800, null, start.add(const Duration(days: 1)), to: start.add(const Duration(days: 6)));
+    await spend(1300, 'Zepto', start.add(const Duration(days: 3)), tag: 'groceries');
+    await spend(800, 'Uber', start.add(const Duration(days: 5)), tag: 'travel');
     await inc(1000, IncomeKind.extra, 'Rahul', start.add(const Duration(days: 7)));
-    await spend(2700, null, start.add(const Duration(days: 7)), to: start.add(const Duration(days: 11)));
+    await spend(2700, 'Swiggy', start.add(const Duration(days: 7)), to: start.add(const Duration(days: 11)), tag: 'food');
     await inc(5000, IncomeKind.borrowed, 'Arjun', start.add(const Duration(days: 9)));
 
     final t = dateOnly(now);
@@ -190,4 +195,5 @@ void main() {
   testWidgets('bank sms', (t) => shot(t, const BankSmsScreen(), 'bank-sms'));
   testWidgets('settings', (t) => shot(t, const SettingsScreen(), 'settings'));
   testWidgets('recurring', (t) => shot(t, const RecurringScreen(), 'recurring'));
+  testWidgets('budgets', (t) => shot(t, const BudgetsScreen(), 'budgets'));
 }
