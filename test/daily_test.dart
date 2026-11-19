@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tally/data/daily.dart';
 import 'package:tally/data/db.dart';
 
-Entry _e(int id, String kind, int rupees, DateTime d, {DateTime? to, String? title, String? incomeKind, String? category}) => Entry(
+Entry _e(int id, String kind, int rupees, DateTime d, {DateTime? to, String? title, String? incomeKind, String? category, String? tag}) => Entry(
       id: id,
       kind: kind,
       amount: rupees * 100,
@@ -11,6 +11,7 @@ Entry _e(int id, String kind, int rupees, DateTime d, {DateTime? to, String? tit
       date: d,
       endDate: to,
       category: category,
+      tag: tag,
       unexpected: false,
       yearly: false,
       createdAt: d,
@@ -52,5 +53,29 @@ void main() {
     expect(d.salaryUsed, 0);
     expect(d.pace, Pace.noSalary);
     expect(d.perDayLeft, 0);
+  });
+
+  test('splits each day by category and keeps what made it up', () {
+    final d = DailySpend.of([
+      _e(1, EntryKind.spending, 210, DateTime(2026, 11, 4), title: 'Swiggy'),
+      _e(2, EntryKind.spending, 85, DateTime(2026, 11, 4), title: 'Pay 98450', tag: 'travel'),
+      _e(3, EntryKind.spending, 60, DateTime(2026, 11, 4), title: 'Shop 12'),
+      _e(4, EntryKind.spending, 500, DateTime(2026, 11, 5), to: DateTime(2026, 11, 9), title: 'Market', tag: 'groceries'),
+      _e(5, EntryKind.spending, 9000, DateTime(2026, 11, 5), title: 'Rent'),
+    ], s, e, DateTime(2026, 11, 12), rules: const {'shop 12': 'food'});
+    expect(d.byCat[1], {'food': 27000.0, 'travel': 8500.0});
+    expect(d.items[1].map((x) => x.entry.title), ['Swiggy', 'Pay 98450', 'Shop 12']);
+    expect(d.byCat[2], {'groceries': 10000.0});
+    expect(d.items[2].firstWhere((x) => x.fixed).entry.title, 'Rent');
+    expect(d.items[3].single.spread, isTrue);
+    expect(d.catOrder, ['groceries', 'food', 'travel']);
+  });
+
+  test('untagged spending stacks last', () {
+    final d = DailySpend.of([
+      _e(1, EntryKind.spending, 900, DateTime(2026, 11, 4), title: 'Cash'),
+      _e(2, EntryKind.spending, 100, DateTime(2026, 11, 4), title: 'Swiggy'),
+    ], s, e, DateTime(2026, 11, 12));
+    expect(d.catOrder, ['food', null]);
   });
 }

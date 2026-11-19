@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/money.dart';
+import '../../data/categories.dart';
 import '../../data/daily.dart';
 import '../../data/db.dart';
 import '../../data/repo.dart';
@@ -152,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         RiseIn(
                           delay: 100,
                           child: DailyCard(
-                            d: DailySpend.of(v.entries, v.start, v.end, DateTime.now()),
+                            d: DailySpend.of(v.entries, v.start, v.end, DateTime.now(), rules: catRules(ref.watch(settingsProvider))),
                             start: v.start,
                             end: v.end,
                           ),
