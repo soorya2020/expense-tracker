@@ -18,6 +18,27 @@ Future<void> setBudget(Settings s, String catId, int? paise) async {
   await s.setBudgetsJson(jsonEncode(m));
 }
 
+/// The salary budgets are planned against: this cycle's salary once it has come in,
+/// otherwise the usual salary Tally learned from earlier ones. 0 when there is none yet.
+int planSalary({required int cycleSalary, required int usualSalary}) => cycleSalary > 0 ? cycleSalary : usualSalary;
+
+/// How a set of budgets fits inside a salary. All in paise.
+class SalaryPlan {
+  SalaryPlan(this.salary, Map<String, int> caps) : planned = caps.values.fold(0, (a, v) => a + v);
+  final int salary, planned;
+
+  bool get hasSalary => salary > 0;
+
+  /// Salary not yet given to a budget. Negative when the budgets add up to more than the salary.
+  int get free => salary - planned;
+  bool get over => hasSalary && planned > salary;
+  double get share => hasSalary ? planned / salary : 0;
+
+  /// The most [catId] can have before the budgets pass the salary, keeping every other budget as it is.
+  static int roomFor(int salary, Map<String, int> caps, String catId) =>
+      salary - caps.entries.where((e) => e.key != catId).fold(0, (a, e) => a + e.value);
+}
+
 /// Spending per category in [entries] (one cycle). Untagged spending is under null.
 Map<String?, int> spendByCat(List<Entry> entries, Map<String, String> rules) {
   final m = <String?, int>{};
