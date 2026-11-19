@@ -35,7 +35,8 @@ class SalaryPlan {
   double get share => hasSalary ? planned / salary : 0;
 
   /// The most [catId] can have before the budgets pass the salary, keeping every other budget as it is.
-  static int roomFor(int salary, Map<String, int> caps, String catId) => salary - caps.entries.where((e) => e.key != catId).fold(0, (a, e) => a + e.value);
+  static int roomFor(int salary, Map<String, int> caps, String catId) =>
+      salary - caps.entries.where((e) => e.key != catId).fold(0, (a, e) => a + e.value);
 }
 
 /// Spending per category in [entries] (one cycle). Untagged spending is under null.
@@ -62,10 +63,10 @@ class BudgetLine {
   BudgetState get state => cap == null
       ? BudgetState.fine
       : spent > cap!
-      ? BudgetState.over
-      : used >= .8
-      ? BudgetState.near
-      : BudgetState.fine;
+          ? BudgetState.over
+          : used >= .8
+              ? BudgetState.near
+              : BudgetState.fine;
 }
 
 /// Budgeted categories first (most used first), then categories with spending but no budget.
